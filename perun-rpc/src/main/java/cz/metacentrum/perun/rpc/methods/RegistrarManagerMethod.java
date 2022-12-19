@@ -3,6 +3,7 @@ package cz.metacentrum.perun.rpc.methods;
 import java.util.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import cz.metacentrum.perun.core.api.FailedCandidate;
 import cz.metacentrum.perun.core.api.*;
 import cz.metacentrum.perun.core.api.exceptions.PerunException;
 import cz.metacentrum.perun.registrar.model.*;
@@ -136,6 +137,39 @@ public enum RegistrarManagerMethod implements ManagerMethod {
 
 		}
 
+	},
+
+	/*#
+	 * Invite member candidates. If candidate contains richUser, then his preferred mail is retrieved and used, otherwise email must be passed in candidate's attributes.
+	 *
+	 * @param sess session
+	 * @param vo Vo <code>id</code>
+	 * @param lang language
+	 * @param candidates List<MemberCandidate> list of member candidates
+	 *
+	 * @return list of failed candidates
+	 */
+	/*#
+	 * Invite member candidates to group. If candidate contains richUser, then his preferred mail is retrieved and used, otherwise email must be passed in candidate's attributes.
+	 *
+	 * @param sess session
+	 * @param vo Vo <code>id</code>
+	 * @param lang language
+	 * @param candidates List<MemberCandidate> list of member candidates
+	 * @param group Group <code>id</code>
+	 *
+	 * @return list of failed candidates
+	 */
+	inviteMemberCandidates {
+		@Override
+		public List<FailedCandidate> call(ApiCaller ac, Deserializer parms) throws PerunException {
+			return ac.getRegistrarManager().inviteMemberCandidates(
+				ac.getSession(),
+				ac.getVoById(parms.readInt("vo")),
+				parms.contains("group") ? ac.getGroupById(parms.readInt("group")) : null,
+				parms.readString("lang"),
+				parms.readList("candidates", MemberCandidate.class));
+		}
 	},
 
 	/*#

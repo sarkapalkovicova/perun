@@ -1,9 +1,11 @@
 package cz.metacentrum.perun.core.entry;
 
+import cz.metacentrum.perun.core.api.FailedCandidate;
 import cz.metacentrum.perun.core.api.Attribute;
 import cz.metacentrum.perun.core.api.AttributeDefinition;
 import cz.metacentrum.perun.core.api.AuthzResolver;
 import cz.metacentrum.perun.core.api.Candidate;
+import cz.metacentrum.perun.core.api.MemberCandidate;
 import cz.metacentrum.perun.core.api.NamespaceRules;
 import cz.metacentrum.perun.core.api.Paginated;
 import cz.metacentrum.perun.core.api.MembersPageQuery;
@@ -1727,6 +1729,64 @@ public class MembersManagerEntry implements MembersManager {
 		richMembers = membersManagerBl.convertMembersToRichMembersWithAttributes(sess, richMembers, attributeDefinitions);
 		//RichMembers with filtered attributes by rights from session
 		return membersManagerBl.filterOnlyAllowedAttributes(sess, richMembers);
+	}
+
+	@Override
+	public List<FailedCandidate> addMemberCandidates(PerunSession sess, Vo vo, List<MemberCandidate> candidates) throws PrivilegeException {
+		Utils.checkPerunSession(sess);
+
+		// Authorization
+		if (!AuthzResolver.authorizedInternal(sess, "addMemberCandidates_Vo_List<MemberCandidate>_policy", vo)) {
+			throw new PrivilegeException(sess, "addMemberCandidates");
+		}
+
+		List<FailedCandidate> failedCandidates = new ArrayList<>();
+
+		for (MemberCandidate candidate : candidates) {
+			try {
+				if (candidate.getRichUser() != null) {
+					Member member = this.createMember(sess, vo, candidate.getRichUser());
+					getPerunBl().getMembersManagerBl().validateMemberAsync(sess, member);
+				} else if (candidate.getCandidate() != null) {
+					Member member = this.createMember(sess, vo, candidate.getCandidate());
+					getPerunBl().getMembersManagerBl().validateMemberAsync(sess, member);
+				}
+			} catch (Exception e) {
+				failedCandidates.add(new FailedCandidate(candidate, e.getClass().getSimpleName(), e.getMessage()));
+			}
+		}
+
+		return failedCandidates;
+	}
+
+	@Override
+	public List<FailedCandidate> addMemberCandidates(PerunSession sess, Vo vo, List<MemberCandidate> candidates, Group group) throws PrivilegeException {
+		Utils.checkPerunSession(sess);
+
+		// Authorization
+		if (!AuthzResolver.authorizedInternal(sess, "addMemberCandidates_Vo_List<MemberCandidate>_Group_policy", group)) {
+			throw new PrivilegeException(sess, "addMemberCandidates");
+		}
+
+		List<FailedCandidate> failedCandidates = new ArrayList<>();
+
+		for (MemberCandidate candidate : candidates) {
+			try {
+				if (candidate.getMember() != null) {
+					getPerunBl().getGroupsManager().addMember(sess, group, candidate.getMember());
+				} else if (candidate.getRichUser() != null) {
+					Member member = this.createMember(sess, vo, candidate.getRichUser(), List.of(group));
+					getPerunBl().getMembersManagerBl().validateMemberAsync(sess, member);
+				} else if (candidate.getCandidate() != null) {
+					Member member = this.createMember(sess, vo, candidate.getCandidate(), List.of(group));
+					getPerunBl().getMembersManagerBl().validateMemberAsync(sess, member);
+				}
+			} catch (Exception e) {
+				failedCandidates.add(new FailedCandidate(candidate, e.getClass().getSimpleName(), e.getMessage()));
+			}
+		}
+
+		return failedCandidates;
 	}
 
 	/**

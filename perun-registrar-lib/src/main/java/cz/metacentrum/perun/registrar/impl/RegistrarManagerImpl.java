@@ -12,6 +12,7 @@ import cz.metacentrum.perun.audit.events.RegistrarManagerEvents.FormItemsUpdated
 import cz.metacentrum.perun.audit.events.RegistrarManagerEvents.FormUpdated;
 import cz.metacentrum.perun.audit.events.RegistrarManagerEvents.MemberCreatedForApprovedApp;
 import cz.metacentrum.perun.audit.events.RegistrarManagerEvents.MembershipExtendedForMemberInApprovedApp;
+import cz.metacentrum.perun.core.api.FailedCandidate;
 import cz.metacentrum.perun.core.api.*;
 import cz.metacentrum.perun.core.api.exceptions.*;
 
@@ -3598,6 +3599,29 @@ public class RegistrarManagerImpl implements RegistrarManager {
 	}
 
 	@Override
+	public List<FailedCandidate> inviteMemberCandidates(PerunSession sess, Vo vo, Group group, String lang, List<MemberCandidate> candidates) throws FormNotExistsException {
+		Utils.checkPerunSession(sess);
+
+		List<FailedCandidate> failedCandidates = new ArrayList<>();
+
+		for (MemberCandidate candidate : candidates) {
+			try {
+				if (candidate.getRichUser() != null) {
+					this.getMailManager().sendInvitation(sess, vo, group, perun.getUsersManager().getUserById(sess, candidate.getRichUser().getId()));
+				} else if (candidate.getCandidate() != null) {
+					mailManager.sendInvitation(sess, vo, group, null, getCandidateEmail(candidate.getCandidate()), lang);
+				}
+			} catch (FormNotExistsException e) {
+				throw e;
+			} catch (Exception e) {
+				failedCandidates.add(new FailedCandidate(candidate, e.getClass().getSimpleName(), e.getMessage()));
+			}
+		}
+
+		return failedCandidates;
+	}
+
+	@Override
 	public void handleUsersGroupApplications(PerunSession sess, Vo vo, User user) throws PerunException {
 		// get group apps based on the vo
 		List<Application> apps = jdbc.query(
@@ -3652,6 +3676,21 @@ public class RegistrarManagerImpl implements RegistrarManager {
 	@Override
 	public ConsolidatorManager getConsolidatorManager() {
 		return this.consolidatorManager;
+	}
+
+	/**
+	 * Gets email for candidate.
+	 *
+	 * @param candidate candidate
+	 * @return email
+	 */
+	private String getCandidateEmail(Candidate candidate) {
+		if (candidate.getAttributes().containsKey("urn:perun:member:attribute-def:def:mail")) {
+			return candidate.getAttributes().get("urn:perun:member:attribute-def:def:mail");
+		} else if (candidate.getAttributes().containsKey("urn:perun:user:attribute-def:def:preferredMail")) {
+			return candidate.getAttributes().get("urn:perun:user:attribute-def:def:preferredMail");
+		}
+		return "";
 	}
 
 	/**

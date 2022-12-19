@@ -1535,4 +1535,27 @@ public interface MembersManager {
 	 * @return List<RichMember> RichMembers with specified IDs and attributes
 	 */
 	List<RichMember> getRichMembersByIds(PerunSession sess, List<Integer> ids, List<String> attrsNames) throws PrivilegeException, AttributeNotExistsException;
+
+	/**
+	 * Add member candidates.
+	 *
+	 * @param sess Perun session
+	 * @param vo vo
+	 * @param candidates List<MemberCandidate> list of member candidates
+	 * @return list of failed candidates
+	 * @throws PrivilegeException insufficient permissions
+	 */
+	List<FailedCandidate> addMemberCandidates(PerunSession sess, Vo vo, List<MemberCandidate> candidates) throws PrivilegeException;
+
+	/**
+	 * Add member candidates to Group.
+	 *
+	 * @param sess Perun session
+	 * @param vo vo
+	 * @param candidates List<MemberCandidate> list of member candidates
+	 * @param group group
+	 * @return list of failed candidates
+	 * @throws PrivilegeException insufficient permissions
+	 */
+	List<FailedCandidate> addMemberCandidates(PerunSession sess, Vo vo, List<MemberCandidate> candidates, Group group) throws PrivilegeException;
 }

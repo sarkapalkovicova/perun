@@ -1,5 +1,6 @@
 package cz.metacentrum.perun.rpc.methods;
 
+import cz.metacentrum.perun.core.api.FailedCandidate;
 import cz.metacentrum.perun.core.api.*;
 import cz.metacentrum.perun.core.api.exceptions.PerunException;
 import cz.metacentrum.perun.core.api.exceptions.RpcException;
@@ -2021,6 +2022,41 @@ public enum MembersManagerMethod implements ManagerMethod {
 					ac.getVoById(parms.readInt("vo")),
 					parms.read("query", MembersPageQuery.class),
 					parms.readList("attrNames", String.class));
+		}
+	},
+
+	/*#
+	 * Add member candidates.
+	 *
+	 * @param vo int Vo <code>id</code>
+	 * @param candidates List<MemberCandidate> Member candidates
+	 * @return List<FailedCandidate> list of failed candidates
+	 */
+	/*#
+	 * Add member candidates to group.
+	 *
+	 * @param vo int Vo <code>id</code>
+	 * @param candidates List<MemberCandidate> Member candidates
+	 * @param group int Group <code>id</code>
+	 * @return List<FailedCandidate> list of failed candidates
+	 */
+	addMemberCandidates {
+		@Override
+		public List<FailedCandidate> call(ApiCaller ac, Deserializer parms) throws PerunException {
+			if (parms.contains("group")) {
+				return ac.getMembersManager().addMemberCandidates(
+					ac.getSession(),
+					ac.getVoById(parms.readInt("vo")),
+					parms.readList("candidates", MemberCandidate.class),
+					ac.getGroupById(parms.readInt("group"))
+				);
+			} else {
+				return ac.getMembersManager().addMemberCandidates(
+					ac.getSession(),
+					ac.getVoById(parms.readInt("vo")),
+					parms.readList("candidates", MemberCandidate.class)
+				);
+			}
 		}
 	}
 }

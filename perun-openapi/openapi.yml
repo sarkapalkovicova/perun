@@ -1258,6 +1258,13 @@ components:
         member: { $ref: '#/components/schemas/Member' }
         richUser: { $ref: '#/components/schemas/RichUser' }
 
+    FailedCandidate:
+      type: object
+      properties:
+        candidate: { $ref: '#/components/schemas/MemberCandidate' }
+        errorName: { type: string }
+        errorMessage: { type: string }
+
     ServiceForGUI:
       allOf:
         - $ref: '#/components/schemas/Service'
@@ -2450,6 +2457,15 @@ components:
             items:
               $ref: "#/components/schemas/MemberCandidate"
 
+    ListOfFailedCandidatesResponse:
+      description: "return List<FailedCandidate>"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/FailedCandidate"
+
     ServiceAttributesResponse:
       description: "return List<ServiceAttributes>"
       content:
@@ -3474,6 +3490,16 @@ components:
         type: boolean
       in: query
       required: false
+
+    memberCandidates:
+      name: candidates[]
+      description: list of member candidates
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/MemberCandidate"
+      in: query
+      required: true
 
 
 
@@ -10916,6 +10942,37 @@ paths:
                 attrNames: { type: array, items: { type: string } }
                 query: { $ref: '#/components/schemas/MembersPageQuery' }
 
+  /urlinjsonout/membersManager/addMemberCandidates:
+    post:
+      tags:
+        - membersManager
+      operationId: addMemberCandidates
+      summary: Adds member candidates.
+      parameters:
+        - $ref: '#/components/parameters/voId'
+        - $ref: '#/components/parameters/memberCandidates'
+      responses:
+        '200':
+          $ref: '#/components/responses/ListOfFailedCandidatesResponse'
+        default:
+          $ref: '#/components/responses/ExceptionResponse'
+
+  /urlinjsonout/membersManager/addMemberCandidates/g:
+    post:
+      tags:
+        - membersManager
+      operationId: addGroupMemberCandidates
+      summary: Adds member candidates to group.
+      parameters:
+        - $ref: '#/components/parameters/voId'
+        - $ref: '#/components/parameters/memberCandidates'
+        - $ref: '#/components/parameters/groupId'
+      responses:
+        '200':
+          $ref: '#/components/responses/ListOfFailedCandidatesResponse'
+        default:
+          $ref: '#/components/responses/ExceptionResponse'
+
   #################################################
   #                                               #
   # FacilitiesManager                             #
@@ -16758,6 +16815,39 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/VoidResponse'
+        default:
+          $ref: '#/components/responses/ExceptionResponse'
+
+  /urlinjsonout/registrarManager/inviteMemberCandidates:
+    post:
+      tags:
+        - registrarManager
+      operationId: inviteMemberCandidates
+      summary: Invite member candidates.
+      parameters:
+        - $ref: '#/components/parameters/voId'
+        - { name: lang, description: "language", schema: { type: string },  in: query, required: true }
+        - $ref: '#/components/parameters/memberCandidates'
+      responses:
+        '200':
+          $ref: '#/components/responses/ListOfFailedCandidatesResponse'
+        default:
+          $ref: '#/components/responses/ExceptionResponse'
+
+  /urlinjsonout/registrarManager/inviteMemberCandidates/g:
+    post:
+      tags:
+        - registrarManager
+      operationId: inviteGroupMemberCandidates
+      summary: Invite member candidates.
+      parameters:
+        - $ref: '#/components/parameters/voId'
+        - $ref: '#/components/parameters/groupId'
+        - { name: lang, description: "language", schema: { type: string },  in: query, required: true }
+        - $ref: '#/components/parameters/memberCandidates'
+      responses:
+        '200':
+          $ref: '#/components/responses/ListOfFailedCandidatesResponse'
         default:
           $ref: '#/components/responses/ExceptionResponse'
 

@@ -1,5 +1,6 @@
 package cz.metacentrum.perun.registrar;
 
+import cz.metacentrum.perun.core.api.FailedCandidate;
 import cz.metacentrum.perun.core.api.*;
 import cz.metacentrum.perun.core.api.exceptions.*;
 import cz.metacentrum.perun.registrar.exceptions.CantBeApprovedException;
@@ -661,5 +662,18 @@ public interface RegistrarManager {
 	 * @throws GroupNotAllowedToAutoRegistrationException if given group cannot be added to auto registration
 	 */
 	void addGroupsToAutoRegistration(PerunSession sess, List<Group> groups) throws GroupNotExistsException, PrivilegeException, GroupNotAllowedToAutoRegistrationException;
+
+	/**
+	 * Invite member candidates.
+	 *
+	 * @param sess session
+	 * @param vo Vo
+	 * @param lang language
+	 * @param candidates list of member candidates
+	 * @param group group
+	 * @return list of failed candidates
+	 * @throws FormNotExistsException when form does not exist
+	 */
+	List<FailedCandidate> inviteMemberCandidates(PerunSession sess, Vo vo, Group group, String lang, List<MemberCandidate> candidates) throws FormNotExistsException;
 
 }
