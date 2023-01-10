@@ -10942,36 +10942,32 @@ paths:
                 attrNames: { type: array, items: { type: string } }
                 query: { $ref: '#/components/schemas/MembersPageQuery' }
 
-  /urlinjsonout/membersManager/addMemberCandidates:
+  /json/membersManager/addMemberCandidates:
     post:
       tags:
         - membersManager
       operationId: addMemberCandidates
       summary: Adds member candidates.
-      parameters:
-        - $ref: '#/components/parameters/voId'
-        - $ref: '#/components/parameters/memberCandidates'
       responses:
         '200':
           $ref: '#/components/responses/ListOfFailedCandidatesResponse'
         default:
           $ref: '#/components/responses/ExceptionResponse'
-
-  /urlinjsonout/membersManager/addMemberCandidates/g:
-    post:
-      tags:
-        - membersManager
-      operationId: addGroupMemberCandidates
-      summary: Adds member candidates to group.
-      parameters:
-        - $ref: '#/components/parameters/voId'
-        - $ref: '#/components/parameters/memberCandidates'
-        - $ref: '#/components/parameters/groupId'
-      responses:
-        '200':
-          $ref: '#/components/responses/ListOfFailedCandidatesResponse'
-        default:
-          $ref: '#/components/responses/ExceptionResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              title: InputAddMemberCandidates
+              description: "input to add member candidates"
+              type: object
+              required:
+                - vo
+                - candidates
+              properties:
+                vo: { type: integer }
+                candidates: { type: array, items: { $ref: '#/components/schemas/MemberCandidate' } }
+                group: { type: integer }
 
   #################################################
   #                                               #
