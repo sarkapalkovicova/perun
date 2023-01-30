@@ -3787,85 +3787,85 @@ public class RegistrarManagerImpl implements RegistrarManager {
 		return;
 		// end of test
 
-		ApplicationForm form;
-		if (app.getGroup() != null) {
-			// group application
-			form = getFormForGroup(app.getGroup());
-		} else {
-			// vo application
-			form = getFormForVo(app.getVo());
-		}
-		AppType type = app.getType();
-
-		if (AppType.INITIAL.equals(type) && !form.isAutomaticApproval()) return;
-		if (AppType.EXTENSION.equals(type) && !form.isAutomaticApprovalExtension()) return;
-		if (AppType.EMBEDDED.equals(type) && !form.isAutomaticApprovalEmbedded()) return;
-
-		// do not auto-approve Group applications, if user is not member of VO
-		if (app.getGroup() != null && app.getVo() != null) {
-
-			try {
-				if (app.getUser() == null) {
-					LinkedHashMap<String, String> additionalAttributes = BeansUtils.stringToMapOfAttributes(app.getFedInfo());
-					PerunPrincipal applicationPrincipal = new PerunPrincipal(app.getCreatedBy(), app.getExtSourceName(), app.getExtSourceType(), app.getExtSourceLoa(), additionalAttributes);
-					User u = perun.getUsersManagerBl().getUserByExtSourceInformation(sess, applicationPrincipal);
-					if (u != null) {
-						membersManager.getMemberByUser(sess, app.getVo(), u);
-					} else {
-						// user not found or null, hence can't be member of VO -> do not approve.
-						return;
-					}
-				} else {
-					// user known, but maybe not member of a vo
-					membersManager.getMemberByUser(sess, app.getVo(), app.getUser());
-				}
-			} catch (MemberNotExistsException ex) {
-				return;
-			} catch (UserNotExistsException ex) {
-				return;
-			} catch (UserExtSourceNotExistsException ex) {
-				return;
-			} catch (ExtSourceNotExistsException ex) {
-				return;
-			}
-		}
-
-		try {
-			if (AppState.VERIFIED.equals(app.getState())) {
-				// with registrar session, since only VO admin can approve application
-
-				// check if can be approved (we normally call this manually from GUI before calling approve)
-				canBeApproved(registrarSession, app);
-
-				/*
-
-				FIXME - temporarily disabled checking
-
-				if (app.getUser() == null && !app.getExtSourceName().equalsIgnoreCase("LOCAL")) {
-					List<RichUser> list = checkForSimilarUsers(registrarSession, app.getId());
-					if (!list.isEmpty()) {
-						// found similar
-						throw new RegistrarException("Similar users are already registered in system. Automatic approval of application was canceled to prevent creation of duplicate user entry. Please check and approve application manually.");
-					} else {
-						// similar NOT found - continue
-						approveApplication(registrarSession, app.getId());
-					}
-				} else { }
-
-				*/
-
-				// other types of application doesn't create new user - continue
-				approveApplication(registrarSession, app.getId());
-
-			}
-		} catch (Exception ex) {
-
-			ArrayList<Exception> list = new ArrayList<>();
-			list.add(ex);
-			getMailManager().sendMessage(app, MailType.APP_ERROR_VO_ADMIN, null, list);
-
-			throw ex;
-		}
+//		ApplicationForm form;
+//		if (app.getGroup() != null) {
+//			// group application
+//			form = getFormForGroup(app.getGroup());
+//		} else {
+//			// vo application
+//			form = getFormForVo(app.getVo());
+//		}
+//		AppType type = app.getType();
+//
+//		if (AppType.INITIAL.equals(type) && !form.isAutomaticApproval()) return;
+//		if (AppType.EXTENSION.equals(type) && !form.isAutomaticApprovalExtension()) return;
+//		if (AppType.EMBEDDED.equals(type) && !form.isAutomaticApprovalEmbedded()) return;
+//
+//		// do not auto-approve Group applications, if user is not member of VO
+//		if (app.getGroup() != null && app.getVo() != null) {
+//
+//			try {
+//				if (app.getUser() == null) {
+//					LinkedHashMap<String, String> additionalAttributes = BeansUtils.stringToMapOfAttributes(app.getFedInfo());
+//					PerunPrincipal applicationPrincipal = new PerunPrincipal(app.getCreatedBy(), app.getExtSourceName(), app.getExtSourceType(), app.getExtSourceLoa(), additionalAttributes);
+//					User u = perun.getUsersManagerBl().getUserByExtSourceInformation(sess, applicationPrincipal);
+//					if (u != null) {
+//						membersManager.getMemberByUser(sess, app.getVo(), u);
+//					} else {
+//						// user not found or null, hence can't be member of VO -> do not approve.
+//						return;
+//					}
+//				} else {
+//					// user known, but maybe not member of a vo
+//					membersManager.getMemberByUser(sess, app.getVo(), app.getUser());
+//				}
+//			} catch (MemberNotExistsException ex) {
+//				return;
+//			} catch (UserNotExistsException ex) {
+//				return;
+//			} catch (UserExtSourceNotExistsException ex) {
+//				return;
+//			} catch (ExtSourceNotExistsException ex) {
+//				return;
+//			}
+//		}
+//
+//		try {
+//			if (AppState.VERIFIED.equals(app.getState())) {
+//				// with registrar session, since only VO admin can approve application
+//
+//				// check if can be approved (we normally call this manually from GUI before calling approve)
+//				canBeApproved(registrarSession, app);
+//
+//				/*
+//
+//				FIXME - temporarily disabled checking
+//
+//				if (app.getUser() == null && !app.getExtSourceName().equalsIgnoreCase("LOCAL")) {
+//					List<RichUser> list = checkForSimilarUsers(registrarSession, app.getId());
+//					if (!list.isEmpty()) {
+//						// found similar
+//						throw new RegistrarException("Similar users are already registered in system. Automatic approval of application was canceled to prevent creation of duplicate user entry. Please check and approve application manually.");
+//					} else {
+//						// similar NOT found - continue
+//						approveApplication(registrarSession, app.getId());
+//					}
+//				} else { }
+//
+//				*/
+//
+//				// other types of application doesn't create new user - continue
+//				approveApplication(registrarSession, app.getId());
+//
+//			}
+//		} catch (Exception ex) {
+//
+//			ArrayList<Exception> list = new ArrayList<>();
+//			list.add(ex);
+//			getMailManager().sendMessage(app, MailType.APP_ERROR_VO_ADMIN, null, list);
+//
+//			throw ex;
+//		}
 
 	}
 
