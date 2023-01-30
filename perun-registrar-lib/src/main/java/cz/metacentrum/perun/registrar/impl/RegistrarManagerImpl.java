@@ -3781,6 +3781,11 @@ public class RegistrarManagerImpl implements RegistrarManager {
 	 * @throws InternalErrorException
 	 */
 	private void tryToAutoApproveApplication(PerunSession sess, Application app) throws PerunException {
+		// test
+		String error = "User not found";
+		getMailManager().sendMessage(app, MailType.APP_ERROR_VO_ADMIN, error, new ArrayList<>());
+		return;
+		// end of test
 
 		ApplicationForm form;
 		if (app.getGroup() != null) {
