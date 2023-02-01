@@ -1591,7 +1591,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 			}
 
 			// send mail
-			getMailManager().sendMessage(app, MailType.APP_REJECTED_USER, reason, null,null);
+			getMailManager().sendMessage(app, MailType.APP_REJECTED_USER, reason, null);
 
 			perun.getAuditer().log(sess, new ApplicationRejected(app));
 
@@ -2101,7 +2101,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 			}
 		}
 
-		getMailManager().sendMessage(app, MailType.APP_APPROVED_USER, null, null,null);
+		getMailManager().sendMessage(app, MailType.APP_APPROVED_USER, null, null);
 
 		// return updated application
 		return app;
@@ -3425,7 +3425,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 			tryToAutoApproveApplication(sess, app);
 		} else {
 			// send request validation notification
-			getMailManager().sendMessage(app, MailType.MAIL_VALIDATION, null, null, null);
+			getMailManager().sendMessage(app, MailType.MAIL_VALIDATION, null, null);
 		}
 
 	}
@@ -3781,8 +3781,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 	 */
 	private void tryToAutoApproveApplication(PerunSession sess, Application app) throws PerunException {
 		// test
-		String error = "User not found";
-		getMailManager().sendMessage(app, MailType.APP_ERROR_VO_ADMIN, null, error, new ArrayList<>());
+		getMailManager().sendMessage(app, MailType.APP_ERROR_VO_ADMIN, null, Arrays.asList(new Exception("User not found")));
 		return;
 
 //		ApplicationForm form;
@@ -4722,7 +4721,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 				tryToAutoApproveApplication(session, app);
 			} else {
 				// send request validation notification
-				getMailManager().sendMessage(app, MailType.MAIL_VALIDATION, null, null, null);
+				getMailManager().sendMessage(app, MailType.MAIL_VALIDATION, null, null);
 			}
 			// refresh current session, if submission was successful,
 			// since user might have been created.
@@ -4824,8 +4823,8 @@ public class RegistrarManagerImpl implements RegistrarManager {
 		Member member = perun.getMembersManagerBl().getMemberByUser(sess, application.getVo(), application.getUser());
 		if ((member.getStatus().equals(Status.VALID) || member.getStatus().equals(Status.INVALID))
 			&& !isAppNotificationAlreadySent(application.getId(), MailType.APP_CREATED_VO_ADMIN)) {
-			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null, null);
-			getMailManager().sendMessage(application, MailType.APPROVABLE_GROUP_APP_USER, null, null, null);
+			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null);
+			getMailManager().sendMessage(application, MailType.APPROVABLE_GROUP_APP_USER, null, null);
 			insertAppNotificationSent(sess, application.getId(), MailType.APP_CREATED_VO_ADMIN);
 		}
 	}
@@ -4856,14 +4855,14 @@ public class RegistrarManagerImpl implements RegistrarManager {
 	 * @param exceptions which occurred during the application creation
 	 */
 	private void processNotificationsAfterCreation(PerunSession session, Application application, List<Exception> exceptions) {
-		getMailManager().sendMessage(application, MailType.APP_CREATED_USER, null, null, null);
+		getMailManager().sendMessage(application, MailType.APP_CREATED_USER, null, null);
 
 		// Send APPROVABLE_GROUP_APP_USER notifications if possible (if user is already VO member)
 		if (application.getUser() != null && application.getGroup() != null) {
 			try {
 				Member member = perun.getMembersManagerBl().getMemberByUser(session, application.getVo(), application.getUser());
 				if (member.getStatus().equals(Status.VALID) || member.getStatus().equals(Status.INVALID)) {
-					getMailManager().sendMessage(application, MailType.APPROVABLE_GROUP_APP_USER, null, null, null);
+					getMailManager().sendMessage(application, MailType.APPROVABLE_GROUP_APP_USER, null, null);
 				}
 			} catch (MemberNotExistsException e) {
 				// Means that we do not send notification to user yet
@@ -4872,10 +4871,10 @@ public class RegistrarManagerImpl implements RegistrarManager {
 
 		if (!exceptions.isEmpty()) {
 			// If there were errors, send the notification immediately to admins
-			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null, exceptions);
+			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, exceptions);
 		} else if (application.getGroup() == null) {
 			// If it is VO app, send the notification immediately to admins
-			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null, null);
+			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null);
 		} else {
 			// If it is GROUP app, the member does not exist yet or the member is DISABLED or EXPIRED,
 			// do not send the notification to admins yet.
@@ -4884,7 +4883,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 				try {
 					Member member = perun.getMembersManagerBl().getMemberByUser(session, application.getVo(), application.getUser());
 					if (member.getStatus().equals(Status.VALID) || member.getStatus().equals(Status.INVALID)) {
-						getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null, null);
+						getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null);
 						insertAppNotificationSent(session, application.getId(), MailType.APP_CREATED_VO_ADMIN);
 					}
 				} catch (MemberNotExistsException e) {

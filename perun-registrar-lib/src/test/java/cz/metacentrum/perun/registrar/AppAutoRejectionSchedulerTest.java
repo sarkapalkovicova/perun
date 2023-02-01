@@ -210,7 +210,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "voApplicationsAutoRejection", List.of(vo));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -224,7 +224,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "voApplicationsAutoRejection", List.of(vo));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -243,7 +243,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "voApplicationsAutoRejection", List.of(vo));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -260,7 +260,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "voApplicationsAutoRejection", List.of(vo));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -278,7 +278,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "groupApplicationsAutoRejection", List.of(group));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -294,7 +294,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "groupApplicationsAutoRejection", List.of(group));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -315,7 +315,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "groupApplicationsAutoRejection", List.of(group));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -334,7 +334,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "groupApplicationsAutoRejection", List.of(group));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -354,7 +354,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "voApplicationsAutoRejection", List.of(vo));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 	@Test
 	public void voAdminIgnoredCustomMessageByPreferredLang() throws Exception {
@@ -373,7 +373,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "voApplicationsAutoRejection", List.of(vo));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -393,7 +393,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "voApplicationsAutoRejection", List.of(vo));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -416,7 +416,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "voApplicationsAutoRejection", List.of(vo));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -438,7 +438,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "groupApplicationsAutoRejection", List.of(group));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	@Test
@@ -463,7 +463,7 @@ public class AppAutoRejectionSchedulerTest extends RegistrarBaseIntegrationTest{
 
 		ReflectionTestUtils.invokeMethod(spyScheduler, "groupApplicationsAutoRejection", List.of(group));
 		verify(mockMailManager)
-				.sendMessage(any(), any(), eq(expectedReason), any(), eq(null));
+				.sendMessage(any(), any(), eq(expectedReason), eq(null));
 	}
 
 	// ------------------------------------------------ PRIVATE METHODS ------------------------------------------------
