@@ -133,9 +133,10 @@ public interface MailManager {
 	 * @param app application to send notification for
 	 * @param mailType MailType action which caused sending
 	 * @param reason custom text passed to mail by admin (e.g. reason of application reject)
+	 * @param autoApproveError error that caused automatic approval failure
 	 * @param exceptions list of exceptions which occured when processing parent request
 	 */
-	void sendMessage(Application app, MailType mailType, String reason, List<Exception> exceptions);
+	void sendMessage(Application app, MailType mailType, String reason, String autoApproveError, List<Exception> exceptions);
 
 	/**
 	 * Re-send mail notification for specific application and MailType.

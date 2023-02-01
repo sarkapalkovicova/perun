@@ -1591,7 +1591,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 			}
 
 			// send mail
-			getMailManager().sendMessage(app, MailType.APP_REJECTED_USER, reason, null);
+			getMailManager().sendMessage(app, MailType.APP_REJECTED_USER, reason, null,null);
 
 			perun.getAuditer().log(sess, new ApplicationRejected(app));
 
@@ -1636,7 +1636,6 @@ public class RegistrarManagerImpl implements RegistrarManager {
 
 	@Override
 	public Application approveApplication(PerunSession sess, int appId) throws PerunException {
-
 		synchronized(runningApproveApplication) {
 			if (runningApproveApplication.contains(appId)) {
 				throw new AlreadyProcessingException("Application approval is already processing.");
@@ -2102,7 +2101,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 			}
 		}
 
-		getMailManager().sendMessage(app, MailType.APP_APPROVED_USER, null, null);
+		getMailManager().sendMessage(app, MailType.APP_APPROVED_USER, null, null,null);
 
 		// return updated application
 		return app;
@@ -3426,7 +3425,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 			tryToAutoApproveApplication(sess, app);
 		} else {
 			// send request validation notification
-			getMailManager().sendMessage(app, MailType.MAIL_VALIDATION, null, null);
+			getMailManager().sendMessage(app, MailType.MAIL_VALIDATION, null, null, null);
 		}
 
 	}
@@ -3776,18 +3775,18 @@ public class RegistrarManagerImpl implements RegistrarManager {
 	/**
 	 * Try to approve application if auto-approve is possible
 	 *
-	 * @param sess user who try to approves application
-	 * @param app application to approve
+	 * @param sess user who tries to approve application
+	 * @param app application to be approved
 	 * @throws InternalErrorException
 	 */
 	private void tryToAutoApproveApplication(PerunSession sess, Application app) throws PerunException {
 		// test
 		String error = "User not found";
-		getMailManager().sendMessage(app, MailType.APP_ERROR_VO_ADMIN, error, new ArrayList<>());
+		getMailManager().sendMessage(app, MailType.APP_ERROR_VO_ADMIN, null, error, new ArrayList<>());
 		return;
-		// end of test
 
 //		ApplicationForm form;
+//
 //		if (app.getGroup() != null) {
 //			// group application
 //			form = getFormForGroup(app.getGroup());
@@ -3795,15 +3794,15 @@ public class RegistrarManagerImpl implements RegistrarManager {
 //			// vo application
 //			form = getFormForVo(app.getVo());
 //		}
+//
 //		AppType type = app.getType();
 //
-//		if (AppType.INITIAL.equals(type) && !form.isAutomaticApproval()) return;
-//		if (AppType.EXTENSION.equals(type) && !form.isAutomaticApprovalExtension()) return;
-//		if (AppType.EMBEDDED.equals(type) && !form.isAutomaticApprovalEmbedded()) return;
+//		if ((AppType.INITIAL.equals(type) && !form.isAutomaticApproval()) || (AppType.EXTENSION.equals(type) && !form.isAutomaticApprovalExtension()) || (AppType.EMBEDDED.equals(type) && !form.isAutomaticApprovalEmbedded())) {
+//			return;
+//		}
 //
 //		// do not auto-approve Group applications, if user is not member of VO
 //		if (app.getGroup() != null && app.getVo() != null) {
-//
 //			try {
 //				if (app.getUser() == null) {
 //					LinkedHashMap<String, String> additionalAttributes = BeansUtils.stringToMapOfAttributes(app.getFedInfo());
@@ -3813,19 +3812,15 @@ public class RegistrarManagerImpl implements RegistrarManager {
 //						membersManager.getMemberByUser(sess, app.getVo(), u);
 //					} else {
 //						// user not found or null, hence can't be member of VO -> do not approve.
+//						setAutoApproveErrorToApplication(app, "This application is waiting for approval of the VO application, which must be approved by the VO manager first. After that, this application will be automatically approved.");
 //						return;
 //					}
 //				} else {
 //					// user known, but maybe not member of a vo
 //					membersManager.getMemberByUser(sess, app.getVo(), app.getUser());
 //				}
-//			} catch (MemberNotExistsException ex) {
-//				return;
-//			} catch (UserNotExistsException ex) {
-//				return;
-//			} catch (UserExtSourceNotExistsException ex) {
-//				return;
-//			} catch (ExtSourceNotExistsException ex) {
+//			} catch (MemberNotExistsException | UserNotExistsException | UserExtSourceNotExistsException | ExtSourceNotExistsException ex) {
+//				setAutoApproveErrorToApplication(app, "This application is waiting for approval of the VO application, which must be approved by the VO manager first. After that, this application will be automatically approved.");
 //				return;
 //			}
 //		}
@@ -3859,14 +3854,10 @@ public class RegistrarManagerImpl implements RegistrarManager {
 //
 //			}
 //		} catch (Exception ex) {
-//
-//			ArrayList<Exception> list = new ArrayList<>();
-//			list.add(ex);
-//			getMailManager().sendMessage(app, MailType.APP_ERROR_VO_ADMIN, null, list);
-//
+//			setAutoApproveErrorToApplication(app, ex.getMessage());
+//			getMailManager().sendMessage(app, MailType.APP_ERROR_VO_ADMIN, null, ex.getMessage(), Arrays.asList(ex));
 //			throw ex;
 //		}
-
 	}
 
 	/**
@@ -4731,7 +4722,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 				tryToAutoApproveApplication(session, app);
 			} else {
 				// send request validation notification
-				getMailManager().sendMessage(app, MailType.MAIL_VALIDATION, null, null);
+				getMailManager().sendMessage(app, MailType.MAIL_VALIDATION, null, null, null);
 			}
 			// refresh current session, if submission was successful,
 			// since user might have been created.
@@ -4833,8 +4824,8 @@ public class RegistrarManagerImpl implements RegistrarManager {
 		Member member = perun.getMembersManagerBl().getMemberByUser(sess, application.getVo(), application.getUser());
 		if ((member.getStatus().equals(Status.VALID) || member.getStatus().equals(Status.INVALID))
 			&& !isAppNotificationAlreadySent(application.getId(), MailType.APP_CREATED_VO_ADMIN)) {
-			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null);
-			getMailManager().sendMessage(application, MailType.APPROVABLE_GROUP_APP_USER, null, null);
+			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null, null);
+			getMailManager().sendMessage(application, MailType.APPROVABLE_GROUP_APP_USER, null, null, null);
 			insertAppNotificationSent(sess, application.getId(), MailType.APP_CREATED_VO_ADMIN);
 		}
 	}
@@ -4865,14 +4856,14 @@ public class RegistrarManagerImpl implements RegistrarManager {
 	 * @param exceptions which occurred during the application creation
 	 */
 	private void processNotificationsAfterCreation(PerunSession session, Application application, List<Exception> exceptions) {
-		getMailManager().sendMessage(application, MailType.APP_CREATED_USER, null, null);
+		getMailManager().sendMessage(application, MailType.APP_CREATED_USER, null, null, null);
 
 		// Send APPROVABLE_GROUP_APP_USER notifications if possible (if user is already VO member)
 		if (application.getUser() != null && application.getGroup() != null) {
 			try {
 				Member member = perun.getMembersManagerBl().getMemberByUser(session, application.getVo(), application.getUser());
 				if (member.getStatus().equals(Status.VALID) || member.getStatus().equals(Status.INVALID)) {
-					getMailManager().sendMessage(application, MailType.APPROVABLE_GROUP_APP_USER, null, null);
+					getMailManager().sendMessage(application, MailType.APPROVABLE_GROUP_APP_USER, null, null, null);
 				}
 			} catch (MemberNotExistsException e) {
 				// Means that we do not send notification to user yet
@@ -4881,10 +4872,10 @@ public class RegistrarManagerImpl implements RegistrarManager {
 
 		if (!exceptions.isEmpty()) {
 			// If there were errors, send the notification immediately to admins
-			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, exceptions);
+			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null, exceptions);
 		} else if (application.getGroup() == null) {
 			// If it is VO app, send the notification immediately to admins
-			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null);
+			getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null, null);
 		} else {
 			// If it is GROUP app, the member does not exist yet or the member is DISABLED or EXPIRED,
 			// do not send the notification to admins yet.
@@ -4893,7 +4884,7 @@ public class RegistrarManagerImpl implements RegistrarManager {
 				try {
 					Member member = perun.getMembersManagerBl().getMemberByUser(session, application.getVo(), application.getUser());
 					if (member.getStatus().equals(Status.VALID) || member.getStatus().equals(Status.INVALID)) {
-						getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null);
+						getMailManager().sendMessage(application, MailType.APP_CREATED_VO_ADMIN, null, null, null);
 						insertAppNotificationSent(session, application.getId(), MailType.APP_CREATED_VO_ADMIN);
 					}
 				} catch (MemberNotExistsException e) {
@@ -4947,14 +4938,14 @@ public class RegistrarManagerImpl implements RegistrarManager {
 	}
 
 	// FIXME - we are retrieving GROUP name using only "short_name" so it's not same as getGroupById()
-	static final String APP_SELECT = "select a.id as id,a.vo_id as vo_id, a.group_id as group_id,a.apptype as apptype,a.fed_info as fed_info,a.state as state," +
-			"a.user_id as user_id,a.extsourcename as extsourcename, a.extsourcetype as extsourcetype, a.extsourceloa as extsourceloa, a.user_id as user_id, a.created_at as app_created_at, a.created_by as app_created_by, a.modified_at as app_modified_at, a.modified_by as app_modified_by, " +
+	static final String APP_SELECT = "select a.id as id, a.vo_id as vo_id, a.group_id as group_id,a.apptype as apptype,a.fed_info as fed_info,a.state as state," +
+			"a.extsourcename as extsourcename, a.extsourcetype as extsourcetype, a.extsourceloa as extsourceloa, a.user_id as user_id, a.created_at as app_created_at, a.created_by as app_created_by, a.modified_at as app_modified_at, a.modified_by as app_modified_by, " +
 			"v.name as vo_name, v.short_name as vo_short_name, v.created_by as vo_created_by, v.created_at as vo_created_at, v.created_by_uid as vo_created_by_uid, v.modified_by as vo_modified_by, " +
 			"v.modified_at as vo_modified_at, v.modified_by_uid as vo_modified_by_uid, g.name as group_name, g.dsc as group_description, g.created_by as group_created_by, g.created_at as group_created_at, g.modified_by as group_modified_by, g.created_by_uid as group_created_by_uid, g.modified_by_uid as group_modified_by_uid," +
 			"g.modified_at as group_modified_at, g.vo_id as group_vo_id, g.parent_group_id as group_parent_group_id, g.uu_id as group_uu_id, u.first_name as user_first_name, u.last_name as user_last_name, u.middle_name as user_middle_name, " +
 			"u.title_before as user_title_before, u.title_after as user_title_after, u.service_acc as user_service_acc, u.sponsored_acc as user_sponsored_acc , u.uu_id as user_uu_id from application a left outer join vos v on a.vo_id = v.id left outer join groups g on a.group_id = g.id left outer join users u on a.user_id = u.id";
 
-	static final String APP_SELECT_PAGE = "select a.id as id,a.vo_id as vo_id, a.group_id as group_id,a.apptype as apptype,a.fed_info as fed_info,a.state as state," +
+	static final String APP_SELECT_PAGE = "select a.id as id, a.vo_id as vo_id, a.group_id as group_id, a.apptype as apptype, a.fed_info as fed_info,a.state as state," +
 		"a.user_id as user_id,a.extsourcename as extsourcename, a.extsourcetype as extsourcetype, a.extsourceloa as extsourceloa, a.user_id as user_id, a.created_at as app_created_at, a.created_by as app_created_by, a.modified_at as app_modified_at, a.modified_by as app_modified_by, " +
 		"v.name as vo_name, v.short_name as vo_short_name, v.created_by as vo_created_by, v.created_at as vo_created_at, v.created_by_uid as vo_created_by_uid, v.modified_by as vo_modified_by, " +
 		"v.modified_at as vo_modified_at, v.modified_by_uid as vo_modified_by_uid, g.name as group_name, g.dsc as group_description, g.created_by as group_created_by, g.created_at as group_created_at, g.modified_by as group_modified_by, g.created_by_uid as group_created_by_uid, g.modified_by_uid as group_modified_by_uid," +

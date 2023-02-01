@@ -108,6 +108,7 @@ public class MailManagerImpl implements MailManager {
 	private static final String FIELD_ACTOR = "{actor}";
 	private static final String FIELD_EXT_SOURCE = "{extSource}";
 	private static final String FIELD_CUSTOM_MESSAGE = "{customMessage}";
+	private static final String FIELD_AUTO_APPROVE_ERROR = "{autoApproveError}";
 	private static final String FIELD_FIRST_NAME = "{firstName}";
 	private static final String FIELD_LAST_NAME = "{lastName}";
 	private static final String FIELD_ERRORS = "{errors}";
@@ -454,7 +455,7 @@ public class MailManagerImpl implements MailManager {
 	}
 
 	@Override
-	public void sendMessage(Application app, MailType mailType, String reason, List<Exception> exceptions) {
+	public void sendMessage(Application app, MailType mailType, String reason, String autoApproveError, List<Exception> exceptions) {
 		try {
 			// get form
 			ApplicationForm form = getForm(app);
@@ -494,7 +495,7 @@ public class MailManagerImpl implements MailManager {
 					sendUserMessage(app, mail, data, reason, exceptions, MailType.APP_REJECTED_USER);
 					break;
 				case APP_ERROR_VO_ADMIN:
-					appErrorVoAdmin(app, mail, data, reason, exceptions);
+					appErrorVoAdmin(app, mail, data, reason, autoApproveError, exceptions);
 					break;
 				default:
 					log.error("[MAIL MANAGER] Sending mail type: {} is not supported.", mail.getMailType());
@@ -541,28 +542,28 @@ public class MailManagerImpl implements MailManager {
 				case APPROVABLE_GROUP_APP_USER:
 				case APP_CREATED_VO_ADMIN: {
 					if (app.getState().equals(Application.AppState.NEW) || app.getState().equals(Application.AppState.VERIFIED)) {
-						sendMessage(app, mailType, null, null);
+						sendMessage(app, mailType, null, null, null);
 					} else {
 						throw new RegistrarException("Application must be in state NEW or VERIFIED to allow sending of "+mailType+" notification.");
 					}
 				} break;
 				case MAIL_VALIDATION: {
 					if (app.getState().equals(Application.AppState.NEW)) {
-						sendMessage(app, mailType, null, null);
+						sendMessage(app, mailType, null, null, null);
 					} else {
 						throw new ApplicationNotNewException("Application must be in state NEW to allow sending of "+mailType+" notification.", app.getState().toString());
 					}
 				} break;
 				case APP_APPROVED_USER: {
 					if (Application.AppState.APPROVED.equals(app.getState())) {
-						sendMessage(app, mailType, null, null);
+						sendMessage(app, mailType, null, null, null);
 					} else {
 						throw new RegistrarException("Application must be in state APPROVED to allow sending of "+mailType+" notification.");
 					}
 				} break;
 				case APP_REJECTED_USER: {
 					if (Application.AppState.REJECTED.equals(app.getState())) {
-						sendMessage(app, mailType, reason, null);
+						sendMessage(app, mailType, reason, null, null);
 					} else {
 						throw new RegistrarException("Application must be in state REJECTED to allow sending of "+mailType+" notification.");
 					}
@@ -570,7 +571,7 @@ public class MailManagerImpl implements MailManager {
 			}
 		} else {
 			// perun admin can always be sent any message with an exception to the USER_INVITE
-			sendMessage(app, mailType, reason, null);
+			sendMessage(app, mailType, reason, null, null);
 		}
 		perun.getAuditer().log(sess, new MailSentForApplication(mailType, app.getId()));
 	}
@@ -1307,6 +1308,7 @@ public class MailManagerImpl implements MailManager {
 	 * {phone} - user phone submitted on application or stored in a system
 	 *
 	 * {customMessage} - message passed by the admin to mail (e.g. reason of application reject)
+	 * {autoApproveError} - error that caused automatic approval failure
 	 * {errors} - include errors, which occurred when processing registrar actions
 	 * (e.g. login reservation errors passed to mail for VO admin)
 	 *
@@ -1316,11 +1318,12 @@ public class MailManagerImpl implements MailManager {
 	 * @param data ApplicationData needed for substitution (displayName etc.)
 	 * @param mailText String to substitute parts of
 	 * @param reason Custom message passed by vo admin
+	 * @param autoApproveError error that caused automatic approval failure
 	 * @param exceptions list of exceptions thrown when processing registrar actions
 	 * @param isAlternativePlainText if the text will be used as alternative plain text to an HTML text
 	 * @return modified text
 	 */
-	private String substituteCommonStrings(Application app, List<ApplicationFormItemData> data, String mailText, String reason, List<Exception> exceptions, boolean isAlternativePlainText) {
+	private String substituteCommonStrings(Application app, List<ApplicationFormItemData> data, String mailText, String reason, String autoApproveError, List<Exception> exceptions, boolean isAlternativePlainText) {
 		LinkedHashMap<String, String> additionalAttributes = BeansUtils.stringToMapOfAttributes(app.getFedInfo());
 		PerunPrincipal applicationPrincipal = new PerunPrincipal(app.getCreatedBy(), app.getExtSourceName(), app.getExtSourceType(), app.getExtSourceLoa(), additionalAttributes);
 
@@ -1359,6 +1362,15 @@ public class MailManagerImpl implements MailManager {
 				mailText = mailText.replace(FIELD_CUSTOM_MESSAGE, reason);
 			} else {
 				mailText = mailText.replace(FIELD_CUSTOM_MESSAGE, EMPTY_STRING);
+			}
+		}
+
+		// replace autoApproveError
+		if (mailText.contains(FIELD_AUTO_APPROVE_ERROR)) {
+			if (autoApproveError != null && !autoApproveError.isEmpty()) {
+				mailText = mailText.replace(FIELD_AUTO_APPROVE_ERROR, autoApproveError);
+			} else {
+				mailText = mailText.replace(FIELD_AUTO_APPROVE_ERROR, EMPTY_STRING);
 			}
 		}
 
@@ -1926,7 +1938,7 @@ public class MailManagerImpl implements MailManager {
 	}
 
 	private void appCreatedVoAdmin(Application app, ApplicationMail mail, List<ApplicationFormItemData> data, String reason, List<Exception> exceptions) throws MessagingException {
-		MimeMessage message = getAdminMessage(app, mail, data, reason, exceptions);
+		MimeMessage message = getAdminMessage(app, mail, data, reason, null, exceptions);
 
 		// send a message to all VO or Group admins
 		List<String> toEmail = getToMailAddresses(app);
@@ -1953,14 +1965,14 @@ public class MailManagerImpl implements MailManager {
 		// get language
 		Locale lang = new Locale(getLanguageFromAppData(app, data));
 		// get localized subject and text
-		String mailText = getMailText(mail, lang, app, data, reason, exceptions);
+		String mailText = getMailText(mail, lang, app, data, reason, null, exceptions);
 		if (containsHtmlMessage(mail, lang)) {
-			String alternativePlainText = getMailAlternativePlainText(mail, lang, app, data, reason, exceptions);
+			String alternativePlainText = getMailAlternativePlainText(mail, lang, app, data, reason, null, exceptions);
 			setHtmlMessageWithAltPlainTextMessage(message, alternativePlainText, mailText);
 		} else {
 			message.setText(mailText);
 		}
-		String mailSubject = getMailSubject(mail, lang, app, data, reason, exceptions);
+		String mailSubject = getMailSubject(mail, lang, app, data, reason, null, exceptions);
 		message.setSubject(mailSubject);
 
 		// send to all emails, which needs to be validated
@@ -1983,7 +1995,7 @@ public class MailManagerImpl implements MailManager {
 
 					// set replaced text
 					if (containsHtmlMessage(mail, lang)) {
-						String alternativePlainText = getMailAlternativePlainText(mail, lang, app, data, reason, exceptions);
+						String alternativePlainText = getMailAlternativePlainText(mail, lang, app, data, reason, null, exceptions);
 						alternativePlainText = replaceValidationLinkAndRedirectUrl(app, d, alternativePlainText);
 						setHtmlMessageWithAltPlainTextMessage(message, alternativePlainText, mailText);
 					} else {
@@ -2082,8 +2094,8 @@ public class MailManagerImpl implements MailManager {
 		return mailText;
 	}
 
-	private void appErrorVoAdmin(Application app, ApplicationMail mail, List<ApplicationFormItemData> data, String reason, List<Exception> exceptions) throws MessagingException {
-		MimeMessage message = getAdminMessage(app, mail, data, reason, exceptions);
+	private void appErrorVoAdmin(Application app, ApplicationMail mail, List<ApplicationFormItemData> data, String reason, String autoApproveError, List<Exception> exceptions) throws MessagingException {
+		MimeMessage message = getAdminMessage(app, mail, data, reason, autoApproveError, exceptions);
 
 		// send a message to all VO or Group admins
 		List<String> toEmail = getToMailAddresses(app);
@@ -2109,7 +2121,7 @@ public class MailManagerImpl implements MailManager {
 
 
 	private String getMailText(ApplicationMail mail, Locale lang, Application app, List<ApplicationFormItemData> data,
-							   String reason, List<Exception> exceptions) {
+							   String reason, String autoApproveError, List<Exception> exceptions) {
 		String mailText = EMPTY_STRING;
 
 		MailText htmlMt = mail.getHtmlMessage(lang);
@@ -2117,30 +2129,30 @@ public class MailManagerImpl implements MailManager {
 
 		if (htmlMt.getText() != null && !htmlMt.getText().isBlank()) {
 			mailText = htmlMt.getText();
-			mailText = substituteCommonStrings(app, data, mailText, reason, exceptions, false);
+			mailText = substituteCommonStrings(app, data, mailText, reason, autoApproveError, exceptions, false);
 		} else if (mt.getText() != null && !mt.getText().isEmpty()) {
 			mailText = mt.getText();
-			mailText = substituteCommonStrings(app, data, mailText, reason, exceptions, false);
+			mailText = substituteCommonStrings(app, data, mailText, reason, autoApproveError, exceptions, false);
 		}
 
 		return mailText;
 	}
 
 	private String getMailAlternativePlainText(ApplicationMail mail, Locale lang, Application app, List<ApplicationFormItemData> data,
-							   String reason, List<Exception> exceptions) {
+							   String reason, String autoApproveError, List<Exception> exceptions) {
 		String mailText = EMPTY_STRING;
 		MailText mt = mail.getMessage(lang);
 
 		if (mt.getText() != null && !mt.getText().isEmpty()) {
 			mailText = mt.getText();
-			mailText = substituteCommonStrings(app, data, mailText, reason, exceptions, true);
+			mailText = substituteCommonStrings(app, data, mailText, reason, autoApproveError, exceptions, true);
 		}
 
 		return mailText;
 	}
 
 	private String getMailSubject(ApplicationMail mail, Locale lang, Application app, List<ApplicationFormItemData> data,
-								  String reason, List<Exception> exceptions) {
+								  String reason, String autoApproveError, List<Exception> exceptions) {
 		String mailSubject = EMPTY_STRING;
 
 		MailText htmlMt = mail.getHtmlMessage(lang);
@@ -2148,10 +2160,10 @@ public class MailManagerImpl implements MailManager {
 
 		if (htmlMt.getSubject() != null && !htmlMt.getSubject().isBlank()) {
 			mailSubject = htmlMt.getSubject();
-			mailSubject = substituteCommonStrings(app, data, mailSubject, reason, exceptions, false);
+			mailSubject = substituteCommonStrings(app, data, mailSubject, reason, autoApproveError, exceptions, false);
 		} else if (mt.getSubject() != null && !mt.getSubject().isEmpty()) {
 			mailSubject = mt.getSubject();
-			mailSubject = substituteCommonStrings(app, data, mailSubject, reason, exceptions, false);
+			mailSubject = substituteCommonStrings(app, data, mailSubject, reason, autoApproveError, exceptions, false);
 		}
 
 		// substitute common strings
@@ -2346,7 +2358,7 @@ public class MailManagerImpl implements MailManager {
 	 * Initialize MimeMessage that will be sent to manager(admin). Initialization takes care of following:
 	 * - set FROM, set TEXT, set SUBJECT
 	 */
-	private MimeMessage getAdminMessage(Application app, ApplicationMail mail, List<ApplicationFormItemData> data, String reason, List<Exception> exceptions) throws MessagingException {
+	private MimeMessage getAdminMessage(Application app, ApplicationMail mail, List<ApplicationFormItemData> data, String reason, String autoApproveError, List<Exception> exceptions) throws MessagingException {
 		MimeMessage message = mailSender.createMimeMessage();
 
 		// set FROM
@@ -2358,14 +2370,14 @@ public class MailManagerImpl implements MailManager {
 		Locale lang = new Locale(language);
 
 		// get localized subject and text
-		String mailText = getMailText(mail, lang, app, data, reason, exceptions);
+		String mailText = getMailText(mail, lang, app, data, reason, autoApproveError, exceptions);
 		if (containsHtmlMessage(mail, lang)) {
-			String alternativePlainText = getMailAlternativePlainText(mail, lang, app, data, reason, exceptions);
+			String alternativePlainText = getMailAlternativePlainText(mail, lang, app, data, reason, autoApproveError, exceptions);
 			setHtmlMessageWithAltPlainTextMessage(message, alternativePlainText, mailText);
 		} else {
 			message.setText(mailText);
 		}
-		String mailSubject = getMailSubject(mail, lang, app, data, reason, exceptions);
+		String mailSubject = getMailSubject(mail, lang, app, data, reason, autoApproveError, exceptions);
 		message.setSubject(mailSubject);
 
 		return message;
@@ -2387,14 +2399,14 @@ public class MailManagerImpl implements MailManager {
 		Locale lang = new Locale(getLanguageFromAppData(app, data));
 
 		// get localized subject and text
-		String mailText = getMailText(mail, lang, app, data, reason, exceptions);
+		String mailText = getMailText(mail, lang, app, data, reason, null, exceptions);
 		if (containsHtmlMessage(mail, lang)) {
-			String alternativePlainText = getMailAlternativePlainText(mail, lang, app, data, reason, exceptions);
+			String alternativePlainText = getMailAlternativePlainText(mail, lang, app, data, reason, null, exceptions);
 			setHtmlMessageWithAltPlainTextMessage(message, alternativePlainText, mailText);
 		} else {
 			message.setText(mailText);
 		}
-		String mailSubject = getMailSubject(mail, lang, app, data, reason, exceptions);
+		String mailSubject = getMailSubject(mail, lang, app, data, reason, null, exceptions);
 		message.setSubject(mailSubject);
 
 		return message;
