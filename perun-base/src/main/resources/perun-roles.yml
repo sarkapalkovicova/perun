@@ -6940,9 +6940,9 @@ perun_policies:
 
   filter-getCompleteCandidates_policy:
     policy_roles:
-      - GROUPADMIN: Vo
-      - GROUPOBSERVER: Vo
-      - GROUPMEMBERSHIPMANAGER: Vo
+      - GROUPADMIN: Group
+      - GROUPOBSERVER: Group
+      - GROUPMEMBERSHIPMANAGER: Group
       - VOADMIN: Vo
       - VOOBSERVER: Vo
       - PERUNOBSERVER:
