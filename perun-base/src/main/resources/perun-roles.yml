@@ -3615,9 +3615,9 @@ perun_policies:
 
   filter-getMembersPage_policy:
     policy_roles:
-      - GROUPADMIN: Group
-      - GROUPOBSERVER: Group
-      - GROUPMEMBERSHIPMANAGER: Group
+      - GROUPADMIN:
+      - GROUPOBSERVER:
+      - GROUPMEMBERSHIPMANAGER:
       - PERUNOBSERVER:
     include_policies:
       - default_policy
