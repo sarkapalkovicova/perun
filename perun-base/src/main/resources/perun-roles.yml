@@ -3618,6 +3618,8 @@ perun_policies:
       - GROUPADMIN: Group
       - GROUPOBSERVER: Group
       - GROUPMEMBERSHIPMANAGER: Group
+      - VOADMIN: Vo
+      - VOOBSERVER: Vo
       - PERUNOBSERVER:
     include_policies:
       - default_policy
