@@ -42,6 +42,7 @@ import cz.metacentrum.perun.core.api.exceptions.NamespaceRulesNotExistsException
 import cz.metacentrum.perun.core.api.exceptions.ParentGroupNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PasswordCreationFailedException;
 import cz.metacentrum.perun.core.api.exceptions.PasswordStrengthException;
+import cz.metacentrum.perun.core.api.exceptions.PolicyNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PrivilegeException;
 import cz.metacentrum.perun.core.api.exceptions.SponsorshipDoesNotExistException;
 import cz.metacentrum.perun.core.api.exceptions.UserExtSourceNotExistsException;
@@ -1414,16 +1415,16 @@ public interface MembersManagerBl {
 	Date getNewExtendMembership(PerunSession sess, Member member);
 
 	/**
-   * Returns the date to which will be extended potential member of the VO.
-   *
-   * @param sess
-   * @param vo
-   * @param loa
-   * @return date
-   * @throws InternalErrorException
-   * @throws ExtendMembershipException
-   */
-  Date getNewExtendMembership(PerunSession sess, Vo vo, String loa) throws ExtendMembershipException;
+	 * Returns the date to which will be extended potential member of the VO.
+	 *
+	 * @param sess
+	 * @param vo
+	 * @param loa
+	 * @return date
+	 * @throws InternalErrorException
+	 * @throws ExtendMembershipException
+	 */
+	Date getNewExtendMembership(PerunSession sess, Vo vo, String loa) throws ExtendMembershipException;
 
 	/**
 	 * For richMember filter all his user and member attributes and remove all which principal has no access to.
@@ -1545,7 +1546,7 @@ public interface MembersManagerBl {
 	 * @throws AlreadySponsorException
 	 */
 	Member setSponsoredMember(PerunSession session, SponsoredUserData data, Vo vo, User userToBeSponsored, User sponsor,
-	                          LocalDate validityTo, Validation validation) throws AlreadyMemberException, ExtendMembershipException, UserNotInRoleException, PasswordStrengthException, WrongAttributeValueException, WrongReferenceAttributeValueException, LoginNotExistsException, PasswordCreationFailedException, InvalidLoginException, ExtSourceNotExistsException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException;
+							  LocalDate validityTo, Validation validation) throws AlreadyMemberException, ExtendMembershipException, UserNotInRoleException, PasswordStrengthException, WrongAttributeValueException, WrongReferenceAttributeValueException, LoginNotExistsException, PasswordCreationFailedException, InvalidLoginException, ExtSourceNotExistsException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException;
 
 	/**
 	 * Creates a sponsored membership for the given user.
@@ -1603,9 +1604,9 @@ public interface MembersManagerBl {
 	 * @return list of maps of name, status, login and password
 	 */
 	List<Map<String, String>> createSponsoredMembersFromCSV(PerunSession sess, Vo vo, String namespace,
-	                                                               List<String> data, String header, User sponsor,
-	                                                               LocalDate validityTo, boolean sendActivationLink, String language,
-																   String url, Validation validation, List<Group> groups);
+															List<String> data, String header, User sponsor,
+															LocalDate validityTo, boolean sendActivationLink, String language,
+															String url, Validation validation, List<Group> groups);
 
 	/**
 	 * Creates new sponsored members.
@@ -1785,7 +1786,19 @@ public interface MembersManagerBl {
 	 * @param attrNames attribute names
 	 * @return page of requested rich members
 	 */
-	Paginated<RichMember> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, List<String> attrNames);
+	Paginated<RichMember> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, List<String> attrNames) throws PolicyNotExistsException;
+
+	/**
+	 * Get page of members from the given vo, with the given attributes, based on policy.
+	 *
+	 * @param sess session
+	 * @param vo vo
+	 * @param query query with page information
+	 * @param attrNames attribute names
+	 * @param policy policy to use
+	 * @return page of requested rich members
+	 */
+	Paginated<RichMember> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, List<String> attrNames, String policy) throws PolicyNotExistsException;
 
 	/**
 	 * Update the sponsorship of given member for given sponsor.

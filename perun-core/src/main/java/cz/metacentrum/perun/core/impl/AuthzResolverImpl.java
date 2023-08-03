@@ -1272,4 +1272,19 @@ public class AuthzResolverImpl implements AuthzResolverImplApi {
 
 		return StringUtils.join(listOfConditions, " and ");
 	}
+
+	/**
+	 * Returns role id based on its name
+	 *
+	 * @param name - name of the role
+	 * @return role id
+	 */
+	@Override
+	public int getRoleIdByName(String name) {
+		try {
+			return jdbc.queryForInt("SELECT id FROM roles WHERE name=?", name.toLowerCase());
+		} catch (RuntimeException e) {
+			throw new InternalErrorException(e);
+		}
+	}
 }

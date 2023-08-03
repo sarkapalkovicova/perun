@@ -1421,7 +1421,7 @@ perun_policies:
 
   getGroupById_int_policy:
     policy_roles:
-#      Temporary fix until a new MEMBERSHIP role is created
+      #      Temporary fix until a new MEMBERSHIP role is created
       - SELF:
       - RESOURCEADMIN: Vo
       - RESOURCEOBSERVER: Vo
@@ -1455,7 +1455,7 @@ perun_policies:
 
   getGroupsByIds_List<Integer>_policy:
     policy_roles:
-#      Temporary fix until a new MEMBERSHIP role is created
+      #      Temporary fix until a new MEMBERSHIP role is created
       - SELF:
       - RESOURCEADMIN:
       - RESOURCEOBSERVER:
@@ -1472,7 +1472,7 @@ perun_policies:
 
   filter-getGroupsByIds_List<Integer>_policy:
     policy_roles:
-#      Temporary fix until a new MEMBERSHIP role is created
+      #      Temporary fix until a new MEMBERSHIP role is created
       - SELF:
       - RESOURCEADMIN: Vo
       - RESOURCEOBSERVER: Vo
@@ -3610,6 +3610,15 @@ perun_policies:
       - PERUNOBSERVER:
       - VOOBSERVER: Vo
       - VOADMIN: Vo
+    include_policies:
+      - default_policy
+
+  filter-getMembersPage_policy:
+    policy_roles:
+      - GROUPADMIN:
+      - GROUPOBSERVER:
+      - GROUPMEMBERSHIPMANAGER:
+      - PERUNOBSERVER:
     include_policies:
       - default_policy
 

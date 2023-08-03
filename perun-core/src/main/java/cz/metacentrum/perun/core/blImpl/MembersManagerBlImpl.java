@@ -82,6 +82,7 @@ import cz.metacentrum.perun.core.api.exceptions.NotGroupMemberException;
 import cz.metacentrum.perun.core.api.exceptions.ParentGroupNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PasswordCreationFailedException;
 import cz.metacentrum.perun.core.api.exceptions.PasswordStrengthException;
+import cz.metacentrum.perun.core.api.exceptions.PolicyNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.RelationExistsException;
 import cz.metacentrum.perun.core.api.exceptions.RoleCannotBeManagedException;
 import cz.metacentrum.perun.core.api.exceptions.RoleManagementRulesNotExistsException;
@@ -167,14 +168,14 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 	private final static String A_MEMBER_DEF_MEMBER_ORGANIZATIONS_HISTORY = AttributesManager.NS_MEMBER_ATTR_DEF + ":memberOrganizationsHistory";
 
 	public static final List<String> SPONSORED_MEMBER_REQUIRED_FIELDS = Arrays.asList(
-			"firstname",
-			"lastname",
-			A_U_PREF_MAIL
+		"firstname",
+		"lastname",
+		A_U_PREF_MAIL
 	);
 
 	public static final List<String> SPONSORED_MEMBER_ADDITIONAL_FIELDS = Arrays.asList(
-			"login",
-		    A_U_NOTE
+		"login",
+		A_U_NOTE
 	);
 
 	private final MembersManagerImplApi membersManagerImpl;
@@ -420,7 +421,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 
 	@Override
 	public Member createMember(PerunSession sess, Vo vo, SpecificUserType specificUserType, Candidate candidate) throws WrongAttributeValueException, WrongReferenceAttributeValueException, AlreadyMemberException, ExtendMembershipException {
-			return this.createMember(sess, vo, specificUserType, candidate, null, new ArrayList<>());
+		return this.createMember(sess, vo, specificUserType, candidate, null, new ArrayList<>());
 	}
 
 	//MAIN METHOD
@@ -433,7 +434,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			for (UserExtSource ues: candidate.getUserExtSources()) {
 				// Check if the extSource exists
 				ExtSource tmpExtSource = getPerunBl().getExtSourcesManagerBl().checkOrCreateExtSource(sess, ues.getExtSource().getName(),
-						ues.getExtSource().getType());
+					ues.getExtSource().getType());
 				// Set the extSource ID
 				ues.getExtSource().setId(tmpExtSource.getId());
 				try {
@@ -512,11 +513,11 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 				Attribute attribute = new Attribute(attributeDefinition);
 				attribute.setValue(getPerunBl().getAttributesManagerBl().stringToAttributeValue(candidate.getAttributes().get(attributeName), attribute.getType()));
 				if (getPerunBl().getAttributesManagerBl().isFromNamespace(sess, attribute, AttributesManager.NS_MEMBER_ATTR_DEF) ||
-						getPerunBl().getAttributesManagerBl().isFromNamespace(sess, attribute, AttributesManager.NS_MEMBER_ATTR_OPT)) {
+					getPerunBl().getAttributesManagerBl().isFromNamespace(sess, attribute, AttributesManager.NS_MEMBER_ATTR_OPT)) {
 					// This is member's attribute
 					membersAttributes.add(attribute);
 				} else if (getPerunBl().getAttributesManagerBl().isFromNamespace(sess, attribute, AttributesManager.NS_USER_ATTR_DEF) ||
-						getPerunBl().getAttributesManagerBl().isFromNamespace(sess, attribute, AttributesManager.NS_USER_ATTR_OPT)) {
+					getPerunBl().getAttributesManagerBl().isFromNamespace(sess, attribute, AttributesManager.NS_USER_ATTR_OPT)) {
 					if(overwriteUserAttributes != null && !overwriteUserAttributes.isEmpty() && overwriteUserAttributes.contains(attribute.getName())) {
 						usersAttributesToModify.add(attribute);
 					} else {
@@ -1617,8 +1618,8 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 				}
 			}
 		} catch (VoNotExistsException | WrongReferenceAttributeValueException | WrongAttributeValueException |
-			WrongAttributeAssignmentException | AttributeNotExistsException | MemberNotExistsException |
-			ExtendMembershipException e) {
+				 WrongAttributeAssignmentException | AttributeNotExistsException | MemberNotExistsException |
+				 ExtendMembershipException e) {
 			throw new InternalErrorException(e);
 		}
 	}
@@ -1756,41 +1757,41 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 		member.setStatus(Status.EXPIRED);
 		// if member went from invalid/disabled to expired, they might not exist in some parentVos - create them and set MemberOrganizations to empty list
 		if (oldStatus == Status.INVALID || oldStatus == Status.DISABLED) {
-				User user = getPerunBl().getUsersManagerBl().getUserByMember(sess, member);
-				List<Vo> parentVos = getPerunBl().getVosManagerBl().getParentVos(sess, member.getVoId());
-				for (Vo vo : parentVos) {
+			User user = getPerunBl().getUsersManagerBl().getUserByMember(sess, member);
+			List<Vo> parentVos = getPerunBl().getVosManagerBl().getParentVos(sess, member.getVoId());
+			for (Vo vo : parentVos) {
+				try {
+					Vo memberVo = perunBl.getVosManagerBl().getVoById(sess, member.getVoId());
 					try {
-						Vo memberVo = perunBl.getVosManagerBl().getVoById(sess, member.getVoId());
-						try {
-							Member newMember = perunBl.getMembersManagerBl().createMember(sess, vo, user);
-							perunBl.getMembersManagerBl().validateMember(sess, newMember);
-							addMemberToParentVosGroups(sess, member);
+						Member newMember = perunBl.getMembersManagerBl().createMember(sess, vo, user);
+						perunBl.getMembersManagerBl().validateMember(sess, newMember);
+						addMemberToParentVosGroups(sess, member);
 
-							// set memberOrganizations attribute to empty list
-							Attribute memberOrganizations = perunBl.getAttributesManagerBl().getAttribute(sess, newMember, A_MEMBER_DEF_MEMBER_ORGANIZATIONS);
-							memberOrganizations.setValue(new ArrayList<String>());
-							perunBl.getAttributesManagerBl().setAttribute(sess, newMember, memberOrganizations);
+						// set memberOrganizations attribute to empty list
+						Attribute memberOrganizations = perunBl.getAttributesManagerBl().getAttribute(sess, newMember, A_MEMBER_DEF_MEMBER_ORGANIZATIONS);
+						memberOrganizations.setValue(new ArrayList<String>());
+						perunBl.getAttributesManagerBl().setAttribute(sess, newMember, memberOrganizations);
 
-							// update memberOrganizationsHistory attribute to contain VO
-							Attribute memberOrganizationsHistory = perunBl.getAttributesManagerBl().getAttribute(sess, newMember, A_MEMBER_DEF_MEMBER_ORGANIZATIONS_HISTORY);
-							memberOrganizationsHistory.setValue(new ArrayList<>(List.of(memberVo.getShortName())));
-							perunBl.getAttributesManagerBl().setAttribute(sess, newMember, memberOrganizationsHistory);
-						} catch (AlreadyMemberException e) {
-							// update memberOrganizationsHistory attribute to contain VO
-							Member parentVoMember = getMemberByUserId(sess, vo, member.getUserId());
-							Attribute memberOrganizationsHistory = perunBl.getAttributesManagerBl().getAttribute(sess, parentVoMember, A_MEMBER_DEF_MEMBER_ORGANIZATIONS_HISTORY);
-							ArrayList<String> currentValue = memberOrganizationsHistory.valueAsList();
-							currentValue = (currentValue == null) ? new ArrayList<>() : currentValue;
-							if (!currentValue.contains(memberVo.getShortName())) {
-								currentValue.add(memberVo.getShortName());
-								memberOrganizationsHistory.setValue(currentValue);
-								perunBl.getAttributesManagerBl().setAttribute(sess, parentVoMember, memberOrganizationsHistory);
-							}
+						// update memberOrganizationsHistory attribute to contain VO
+						Attribute memberOrganizationsHistory = perunBl.getAttributesManagerBl().getAttribute(sess, newMember, A_MEMBER_DEF_MEMBER_ORGANIZATIONS_HISTORY);
+						memberOrganizationsHistory.setValue(new ArrayList<>(List.of(memberVo.getShortName())));
+						perunBl.getAttributesManagerBl().setAttribute(sess, newMember, memberOrganizationsHistory);
+					} catch (AlreadyMemberException e) {
+						// update memberOrganizationsHistory attribute to contain VO
+						Member parentVoMember = getMemberByUserId(sess, vo, member.getUserId());
+						Attribute memberOrganizationsHistory = perunBl.getAttributesManagerBl().getAttribute(sess, parentVoMember, A_MEMBER_DEF_MEMBER_ORGANIZATIONS_HISTORY);
+						ArrayList<String> currentValue = memberOrganizationsHistory.valueAsList();
+						currentValue = (currentValue == null) ? new ArrayList<>() : currentValue;
+						if (!currentValue.contains(memberVo.getShortName())) {
+							currentValue.add(memberVo.getShortName());
+							memberOrganizationsHistory.setValue(currentValue);
+							perunBl.getAttributesManagerBl().setAttribute(sess, parentVoMember, memberOrganizationsHistory);
 						}
-					} catch (ExtendMembershipException | WrongReferenceAttributeValueException | AttributeNotExistsException | WrongAttributeAssignmentException | VoNotExistsException | MemberNotExistsException e) {
-						throw new InternalErrorException(e);
 					}
+				} catch (ExtendMembershipException | WrongReferenceAttributeValueException | AttributeNotExistsException | WrongAttributeAssignmentException | VoNotExistsException | MemberNotExistsException e) {
+					throw new InternalErrorException(e);
 				}
+			}
 			// expired from other states - delete from parent vos
 		} else {
 			removeMemberFromParentVos(sess, member);
@@ -1894,103 +1895,103 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 
 	@Override
 	public Date getNewExtendMembership(PerunSession sess, Vo vo, String loa) throws ExtendMembershipException {
-	  // Check if the VO has set membershipExpirationRules attribute
-    LinkedHashMap<String, String> membershipExpirationRules;
+		// Check if the VO has set membershipExpirationRules attribute
+		LinkedHashMap<String, String> membershipExpirationRules;
 
-    Attribute membershipExpirationRulesAttribute;
-    try {
-      membershipExpirationRulesAttribute = getPerunBl().getAttributesManagerBl().getAttribute(sess, vo, MembersManager.membershipExpirationRulesAttributeName);
-      membershipExpirationRules = membershipExpirationRulesAttribute.valueAsMap();
-      // If attribute was not filled, then silently exit with null
-      if (membershipExpirationRules == null) return null;
-    } catch (AttributeNotExistsException e) {
-      // No rules set, so leave it as it is
-      return null;
-    } catch (WrongAttributeAssignmentException e) {
-      throw new InternalErrorException("Shouldn't happen.");
-    }
+		Attribute membershipExpirationRulesAttribute;
+		try {
+			membershipExpirationRulesAttribute = getPerunBl().getAttributesManagerBl().getAttribute(sess, vo, MembersManager.membershipExpirationRulesAttributeName);
+			membershipExpirationRules = membershipExpirationRulesAttribute.valueAsMap();
+			// If attribute was not filled, then silently exit with null
+			if (membershipExpirationRules == null) return null;
+		} catch (AttributeNotExistsException e) {
+			// No rules set, so leave it as it is
+			return null;
+		} catch (WrongAttributeAssignmentException e) {
+			throw new InternalErrorException("Shouldn't happen.");
+		}
 
-    // Which LOA we won't extend? This is applicable only for members who have already set expiration from the previous period
-    if (membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipDoNotExtendLoaKeyName) != null) {
-      String[] doNotExtendLoas = membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipDoNotExtendLoaKeyName).split(",");
+		// Which LOA we won't extend? This is applicable only for members who have already set expiration from the previous period
+		if (membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipDoNotExtendLoaKeyName) != null) {
+			String[] doNotExtendLoas = membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipDoNotExtendLoaKeyName).split(",");
 
-      for (String doNotExtendLoa : doNotExtendLoas) {
-        if (doNotExtendLoa.equals(loa)) {
-          // LOA provided is not allowed for extension
-          throw new ExtendMembershipException(ExtendMembershipException.Reason.INSUFFICIENTLOA,
-                "Provided LoA " + loa + " doesn't have required level for VO id " + vo.getId() + ".");
-        }
-      }
-    }
-
-    LocalDate localDate = LocalDate.now();
-
-    String period = null;
-    // Default extension
-    if (membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipPeriodKeyName) != null) {
-      period = membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipPeriodKeyName);
-    }
-
-    // Do we extend particular LoA? Attribute syntax LoA|[period][.]
-    if (membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipPeriodLoaKeyName) != null) {
-      // Which period
-      String[] membershipPeriodLoa = membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipPeriodLoaKeyName).split("\\|");
-      String membershipLoa = membershipPeriodLoa[0];
-      String periodLoa = membershipPeriodLoa[1];
-      // Does the user have this LoA?
-      if (membershipLoa.equals(loa)) {
-        period = periodLoa;
-      }
-    }
-
-    // Do we extend for x months or for static date?
-    if (period != null) {
-      if (period.startsWith("+")) {
-		  try {
-			  localDate = Utils.extendDateByPeriod(localDate, period);
-		  } catch (InternalErrorException e) {
-		  	throw new InternalErrorException("Wrong format of period in VO membershipExpirationRules attribute.", e);
-		  }
-      } else {
-        // We will extend to particular date
-
-        // Parse date
-        Pattern p = Pattern.compile("([0-9]+).([0-9]+).");
-        Matcher m = p.matcher(period);
-		  if (!m.matches()) {
-			  throw new InternalErrorException("Wrong format of period in VO membershipExpirationRules attribute. Period: " + period);
-		  }
-		  localDate = Utils.getClosestExpirationFromStaticDate(m);
-
-          // ***** GRACE PERIOD *****
-          // Is there a grace period?
-          if (membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipGracePeriodKeyName) != null) {
-            String gracePeriod = membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipGracePeriodKeyName);
-            // If the extension is requested in period-gracePeriod then extend to next period
-
-            // Get the value of the grace period
-            p = Pattern.compile("([0-9]+)([dmy]?)");
-            m = p.matcher(gracePeriod);
-            if (m.matches()) {
-				LocalDate gracePeriodDate;
-				try {
-					Pair<Integer, TemporalUnit> fieldAmount = Utils.prepareGracePeriodDate(m);
-					gracePeriodDate = localDate.minus(fieldAmount.getLeft(), fieldAmount.getRight());
-				} catch (InternalErrorException e) {
-					throw new InternalErrorException("Wrong format of gracePeriod in VO membershipExpirationRules attribute. gracePeriod: " + gracePeriod);
+			for (String doNotExtendLoa : doNotExtendLoas) {
+				if (doNotExtendLoa.equals(loa)) {
+					// LOA provided is not allowed for extension
+					throw new ExtendMembershipException(ExtendMembershipException.Reason.INSUFFICIENTLOA,
+						"Provided LoA " + loa + " doesn't have required level for VO id " + vo.getId() + ".");
 				}
+			}
+		}
 
-              // Check if we are in grace period
-              if (gracePeriodDate.isEqual(LocalDate.now()) || gracePeriodDate.isBefore(LocalDate.now())) {
-                // We are in grace period, so extend to the next period
-                localDate = localDate.plusYears(1);
-              }
-            }
-          }
-      }
-    }
+		LocalDate localDate = LocalDate.now();
 
-        return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+		String period = null;
+		// Default extension
+		if (membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipPeriodKeyName) != null) {
+			period = membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipPeriodKeyName);
+		}
+
+		// Do we extend particular LoA? Attribute syntax LoA|[period][.]
+		if (membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipPeriodLoaKeyName) != null) {
+			// Which period
+			String[] membershipPeriodLoa = membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipPeriodLoaKeyName).split("\\|");
+			String membershipLoa = membershipPeriodLoa[0];
+			String periodLoa = membershipPeriodLoa[1];
+			// Does the user have this LoA?
+			if (membershipLoa.equals(loa)) {
+				period = periodLoa;
+			}
+		}
+
+		// Do we extend for x months or for static date?
+		if (period != null) {
+			if (period.startsWith("+")) {
+				try {
+					localDate = Utils.extendDateByPeriod(localDate, period);
+				} catch (InternalErrorException e) {
+					throw new InternalErrorException("Wrong format of period in VO membershipExpirationRules attribute.", e);
+				}
+			} else {
+				// We will extend to particular date
+
+				// Parse date
+				Pattern p = Pattern.compile("([0-9]+).([0-9]+).");
+				Matcher m = p.matcher(period);
+				if (!m.matches()) {
+					throw new InternalErrorException("Wrong format of period in VO membershipExpirationRules attribute. Period: " + period);
+				}
+				localDate = Utils.getClosestExpirationFromStaticDate(m);
+
+				// ***** GRACE PERIOD *****
+				// Is there a grace period?
+				if (membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipGracePeriodKeyName) != null) {
+					String gracePeriod = membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipGracePeriodKeyName);
+					// If the extension is requested in period-gracePeriod then extend to next period
+
+					// Get the value of the grace period
+					p = Pattern.compile("([0-9]+)([dmy]?)");
+					m = p.matcher(gracePeriod);
+					if (m.matches()) {
+						LocalDate gracePeriodDate;
+						try {
+							Pair<Integer, TemporalUnit> fieldAmount = Utils.prepareGracePeriodDate(m);
+							gracePeriodDate = localDate.minus(fieldAmount.getLeft(), fieldAmount.getRight());
+						} catch (InternalErrorException e) {
+							throw new InternalErrorException("Wrong format of gracePeriod in VO membershipExpirationRules attribute. gracePeriod: " + gracePeriod);
+						}
+
+						// Check if we are in grace period
+						if (gracePeriodDate.isEqual(LocalDate.now()) || gracePeriodDate.isBefore(LocalDate.now())) {
+							// We are in grace period, so extend to the next period
+							localDate = localDate.plusYears(1);
+						}
+					}
+				}
+			}
+		}
+
+		return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 	}
 
 	@Override
@@ -2006,7 +2007,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 	}
 
 	/* Check if the user can apply for VO membership
-	*/
+	 */
 	@Override
 	public boolean canBeMemberWithReason(PerunSession sess, Vo vo, User user, String loa) throws ExtendMembershipException {
 		return this.canBeMemberInternal(sess, vo, user, loa, true);
@@ -2019,7 +2020,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 	}
 
 	/* Check if the user can apply for VO membership
-	*/
+	 */
 	@Override
 	public boolean canBeMember(PerunSession sess, Vo vo, User user, String loa) {
 		try {
@@ -2091,7 +2092,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 							membAttr.setWritable(isWritable);
 							allowedMemberAttributes.add(membAttr);
 						}
-					//if not, get information about authz rights and set record to contextMap
+						//if not, get information about authz rights and set record to contextMap
 					} else {
 						boolean canRead = false;
 						if (membAttr.getNamespace().startsWith(AttributesManager.NS_MEMBER_GROUP_ATTR)) {
@@ -2128,7 +2129,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 							userAttr.setWritable(isWritable);
 							allowedUserAttributes.add(userAttr);
 						}
-					//if not, get information about authz rights and set record to contextMap
+						//if not, get information about authz rights and set record to contextMap
 					} else {
 						if(AuthzResolver.isAuthorizedForAttribute(sess, AttributeAction.READ, userAttr, rm.getUser(), true)) {
 							boolean isWritable = AuthzResolver.isAuthorizedForAttribute(sess, AttributeAction.WRITE, userAttr, rm.getUser(), false);
@@ -2139,7 +2140,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 							contextMap.put(userAttr.getFriendlyName(), null);
 						}
 					}
-				rm.setUserAttributes(allowedUserAttributes);
+					rm.setUserAttributes(allowedUserAttributes);
 				}
 			}
 			filteredRichMembers.add(rm);
@@ -2161,7 +2162,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 	 *
 	 * @throws ExtendMembershipException When user can't be member of VO and throwExceptions is set to true
 	 * @throws InternalErrorException
-	*/
+	 */
 	protected boolean canBeMemberInternal(PerunSession sess, Vo vo, User user, String loa, boolean throwExceptions) throws ExtendMembershipException {
 
 		if (user != null && user.isServiceUser()) return true;
@@ -2189,7 +2190,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 				log.warn("User {} doesn't have LOA defined, but 'doNotAllowLoa' option is set for VO {}.", user, vo);
 				if (throwExceptions) {
 					throw new ExtendMembershipException(ExtendMembershipException.Reason.NOUSERLOA,
-							"User " + user + " doesn't have LOA defined, but 'doNotExtendLoa' option is set for VO id " + vo.getId() + ".");
+						"User " + user + " doesn't have LOA defined, but 'doNotExtendLoa' option is set for VO id " + vo.getId() + ".");
 				} else {
 					return false;
 				}
@@ -2202,7 +2203,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 					// User has LOA which is not allowed for getting in
 					if (throwExceptions) {
 						throw new ExtendMembershipException(ExtendMembershipException.Reason.INSUFFICIENTLOA,
-								"User " + user + " doesn't have required LOA for VO id " + vo.getId() + ".");
+							"User " + user + " doesn't have required LOA for VO id " + vo.getId() + ".");
 					} else {
 						return false;
 					}
@@ -2264,10 +2265,10 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 		Attribute membershipExpirationAttribute;
 		try {
 			membershipExpirationAttribute = getPerunBl().getAttributesManagerBl().getAttribute(sess, member,
-					EXPIRATION);
+				EXPIRATION);
 		} catch (AttributeNotExistsException e) {
 			throw new ConsistencyErrorException("Attribute: " + AttributesManager.NS_MEMBER_ATTR_DEF +
-						":membershipExpiration" + " must be defined in order to use membershipExpirationRules");
+				":membershipExpiration" + " must be defined in order to use membershipExpirationRules");
 		} catch (WrongAttributeAssignmentException e) {
 			throw new InternalErrorException(e);
 		}
@@ -2284,14 +2285,14 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 		// This is applicable only for members who have already set expiration from the previous period
 		// and are not service users
 		if (membershipExpirationRules.get(AbstractMembershipExpirationRulesModule.membershipDoNotExtendLoaKeyName) != null &&
-				membershipExpirationAttribute.getValue() != null &&
-				!isServiceUser) {
+			membershipExpirationAttribute.getValue() != null &&
+			!isServiceUser) {
 			if (memberLoa == null) {
 				// Member doesn't have LOA defined and LOA is required for extension, so do not extend membership.
 				log.warn("Member {} doesn't have LOA defined, but 'doNotExtendLoa' option is set for VO id {}.", member, member.getVoId());
 				if (throwExceptions) {
 					throw new ExtendMembershipException(ExtendMembershipException.Reason.NOUSERLOA,
-							"Member " + member + " doesn't have LOA defined, but 'doNotExtendLoa' option is set for VO id " + member.getVoId() + ".");
+						"Member " + member + " doesn't have LOA defined, but 'doNotExtendLoa' option is set for VO id " + member.getVoId() + ".");
 				} else {
 					return new Pair<>(false, null);
 				}
@@ -2304,7 +2305,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 					// Member has LOA which is not allowed for extension
 					if (throwExceptions) {
 						throw new ExtendMembershipException(ExtendMembershipException.Reason.INSUFFICIENTLOAFOREXTENSION,
-								"Member " + member + " doesn't have required LOA for VO id " + member.getVoId() + ".");
+							"Member " + member + " doesn't have required LOA for VO id " + member.getVoId() + ".");
 					} else {
 						return new Pair<>(false, null);
 					}
@@ -2342,7 +2343,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 					if (membershipExpirationAttribute.getValue() != null) {
 						if (throwExceptions) {
 							throw new ExtendMembershipException(ExtendMembershipException.Reason.INSUFFICIENTLOAFOREXTENSION,
-									"Member " + member + " doesn't have required LOA for VO id " + member.getVoId() + ".");
+								"Member " + member + " doesn't have required LOA for VO id " + member.getVoId() + ".");
 						} else {
 							return new Pair<>(false, null);
 						}
@@ -2361,7 +2362,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 				if (!isMemberInGracePeriod(membershipExpirationRules, (String) membershipExpirationAttribute.getValue())) {
 					if (throwExceptions) {
 						throw new ExtendMembershipException(ExtendMembershipException.Reason.OUTSIDEEXTENSIONPERIOD, (String) membershipExpirationAttribute.getValue(),
-								"Member " + member + " cannot extend because we are outside grace period for VO id " + member.getVoId() + ".");
+							"Member " + member + " cannot extend because we are outside grace period for VO id " + member.getVoId() + ".");
 					} else {
 						return new Pair<>(false, null);
 					}
@@ -2411,7 +2412,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 							if (currentMemberExpiration.isAfter(LocalDate.now())) {
 								if (throwExceptions) {
 									throw new ExtendMembershipException(ExtendMembershipException.Reason.OUTSIDEEXTENSIONPERIOD, (String) membershipExpirationAttribute.getValue(),
-											"Member " + member + " cannot extend because we are outside grace period for VO id " + member.getVoId() + ".");
+										"Member " + member + " cannot extend because we are outside grace period for VO id " + member.getVoId() + ".");
 								} else {
 									return new Pair<>(false, null);
 								}
@@ -2509,11 +2510,11 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 		String subject;
 		try {
 			Attribute subjectTemplateAttribute = perunBl.getAttributesManagerBl().getAttribute(sess, language,
-					AttributesManager.NS_ENTITYLESS_ATTR_DEF + ":nonAuthzPwdResetMailSubject:" + namespace);
+				AttributesManager.NS_ENTITYLESS_ATTR_DEF + ":nonAuthzPwdResetMailSubject:" + namespace);
 			subject = (String) subjectTemplateAttribute.getValue();
 			if (subject == null) {
 				subjectTemplateAttribute = perunBl.getAttributesManagerBl().getAttribute(sess, "en",
-						AttributesManager.NS_ENTITYLESS_ATTR_DEF + ":nonAuthzPwdResetMailSubject:" + namespace);
+					AttributesManager.NS_ENTITYLESS_ATTR_DEF + ":nonAuthzPwdResetMailSubject:" + namespace);
 				subject = (String) subjectTemplateAttribute.getValue();
 			}
 		} catch (AttributeNotExistsException ex) {
@@ -2527,11 +2528,11 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 		String message;
 		try {
 			Attribute messageTemplateAttribute = perunBl.getAttributesManagerBl().getAttribute(sess, language,
-					AttributesManager.NS_ENTITYLESS_ATTR_DEF + ":nonAuthzPwdResetMailTemplate:" + namespace);
+				AttributesManager.NS_ENTITYLESS_ATTR_DEF + ":nonAuthzPwdResetMailTemplate:" + namespace);
 			message = (String) messageTemplateAttribute.getValue();
 			if (message == null) {
 				messageTemplateAttribute = perunBl.getAttributesManagerBl().getAttribute(sess, "en",
-						AttributesManager.NS_ENTITYLESS_ATTR_DEF + ":nonAuthzPwdResetMailTemplate:" + namespace);
+					AttributesManager.NS_ENTITYLESS_ATTR_DEF + ":nonAuthzPwdResetMailTemplate:" + namespace);
 				message = (String) messageTemplateAttribute.getValue();
 			}
 		} catch (AttributeNotExistsException ex) {
@@ -2551,7 +2552,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 
 	@Override
 	public void sendAccountActivationLinkEmail(PerunSession sess, Member member, String namespace, String url,
-										   String mailAddress, String language) {
+											   String mailAddress, String language) {
 		User user = perunBl.getUsersManagerBl().getUserByMember(sess, member);
 
 		List<Attribute> logins = perunBl.getAttributesManagerBl().getLogins(sess, user);
@@ -2676,7 +2677,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 
 	@Override
 	public Member createSponsoredMember(PerunSession sess, SponsoredUserData data, Vo vo, User sponsor,
-	                                    LocalDate validityTo, boolean sendActivationLink, String language, String url, Validation validation) throws AlreadyMemberException, LoginNotExistsException, PasswordCreationFailedException, ExtendMembershipException, WrongAttributeValueException, ExtSourceNotExistsException, WrongReferenceAttributeValueException, UserNotInRoleException, InvalidLoginException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException, PasswordStrengthException {
+										LocalDate validityTo, boolean sendActivationLink, String language, String url, Validation validation) throws AlreadyMemberException, LoginNotExistsException, PasswordCreationFailedException, ExtendMembershipException, WrongAttributeValueException, ExtSourceNotExistsException, WrongReferenceAttributeValueException, UserNotInRoleException, InvalidLoginException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException, PasswordStrengthException {
 		User createdUser = createUser(sess, data);
 		String email = setEmailForUser(sess, createdUser, data.getEmail(), data.getNamespace());
 
@@ -2700,7 +2701,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			}
 			sendAccountActivationLinkEmail(sess, sponsoredMember, data.getNamespace(), url, email, language);
 		}
-		
+
 		return sponsoredMember;
 	}
 
@@ -2729,7 +2730,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 
 	@Override
 	public Member setSponsoredMember(PerunSession session, SponsoredUserData data, Vo vo,
-	                                 User userToBeSponsored, User sponsor, LocalDate validityTo, Validation validation) throws AlreadyMemberException, ExtendMembershipException, UserNotInRoleException, WrongAttributeValueException, WrongReferenceAttributeValueException, LoginNotExistsException, PasswordCreationFailedException, InvalidLoginException, ExtSourceNotExistsException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException, PasswordStrengthException {
+									 User userToBeSponsored, User sponsor, LocalDate validityTo, Validation validation) throws AlreadyMemberException, ExtendMembershipException, UserNotInRoleException, WrongAttributeValueException, WrongReferenceAttributeValueException, LoginNotExistsException, PasswordCreationFailedException, InvalidLoginException, ExtSourceNotExistsException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException, PasswordStrengthException {
 		checkOrSetSponsorRole(session, sponsor, vo);
 
 		if (isNotBlank(data.getNamespace())) {
@@ -2763,8 +2764,8 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 
 	@Override
 	public List<Map<String, String>> createSponsoredMembersFromCSV(PerunSession sess, Vo vo, String namespace,
-			List<String> data, String header, User sponsor, LocalDate validityTo, boolean sendActivationLink,
-			String language, String url, Validation validation, List<Group> groups) {
+																   List<String> data, String header, User sponsor, LocalDate validityTo, boolean sendActivationLink,
+																   String language, String url, Validation validation, List<Group> groups) {
 
 		List<Map<String, String>> totalResult = new ArrayList<>();
 		Set<Member> createdMembers = new HashSet<>();
@@ -2776,11 +2777,11 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 		MappingIterator<Map<String, String>> dataIterator;
 		try {
 			byte[] bytes = String.join("\n", dataWithHeader)
-					.getBytes(StandardCharsets.UTF_8);
+				.getBytes(StandardCharsets.UTF_8);
 			dataIterator = new CsvMapper()
-					.readerFor(Map.class)
-					.with(CsvSchema.emptySchema().withHeader().withColumnSeparator(';'))
-					.readValues(bytes);
+				.readerFor(Map.class)
+				.with(CsvSchema.emptySchema().withHeader().withColumnSeparator(';'))
+				.readValues(bytes);
 		} catch (IOException e) {
 			log.error("Failed to parse received CSV data.", e);
 			throw new InternalErrorException("Failed to parse received CSV data.", e);
@@ -2792,7 +2793,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			// async validation must be performed at the end, not directly during member creation
 			Validation localValidation = (Objects.equals(Validation.ASYNC, validation)) ? Validation.NONE : validation;
 			Map<String, Object> originalResult = createSingleSponsoredMemberFromCSV(sess, vo, namespace, singleRow,
-					sponsor, validityTo, sendActivationLink, language, url, localValidation, groups);
+				sponsor, validityTo, sendActivationLink, language, url, localValidation, groups);
 
 			// convert result to expected "type" for outer API
 			Map<String, String> newResult = new HashMap<>();
@@ -3032,8 +3033,8 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 	}
 
 	@Override
-	public Paginated<RichMember> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, List<String> attrNames) {
-		Paginated<Member> paginatedMembers = membersManagerImpl.getMembersPage(sess, vo, query);
+	public Paginated<RichMember> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, List<String> attrNames, String policy) throws PolicyNotExistsException {
+		Paginated<Member> paginatedMembers = membersManagerImpl.getMembersPage(sess, vo, query, policy);
 		List<RichMember> richMembers = convertMembersToRichMembers(sess, paginatedMembers.getData());
 
 		List<AttributeDefinition> attrDefs = new ArrayList<>();
@@ -3056,12 +3057,17 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 		}
 
 		return new Paginated<>(richMembers, paginatedMembers.getOffset(), paginatedMembers.getPageSize(),
-				paginatedMembers.getTotalCount());
+			paginatedMembers.getTotalCount());
+	}
+
+	@Override
+	public Paginated<RichMember> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, List<String> attrNames) throws PolicyNotExistsException {
+		return getMembersPage(sess, vo, query, attrNames, null);
 	}
 
 	@Override
 	public void updateSponsorshipValidity(PerunSession sess, Member sponsoredMember, User sponsor,
-	                                      LocalDate newValidity) throws SponsorshipDoesNotExistException {
+										  LocalDate newValidity) throws SponsorshipDoesNotExistException {
 		membersManagerImpl.updateSponsorshipValidity(sess, sponsoredMember, sponsor, newValidity);
 		perunBl.getAuditer().log(sess, new SponsorshipValidityUpdated(sponsoredMember, sponsor, newValidity));
 	}
@@ -3196,7 +3202,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 				}
 			}
 		} catch (WrongAttributeValueException | WrongAttributeAssignmentException | WrongReferenceAttributeValueException |
-			MemberGroupMismatchException | MemberResourceMismatchException e) {
+				 MemberGroupMismatchException | MemberResourceMismatchException e) {
 			throw new InternalErrorException(e);
 		}
 	}
@@ -3331,7 +3337,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			}
 		} catch (IllegalAccessException | InvocationTargetException | IntrospectionException e) {
 			throw new InternalErrorException("Invalid field required by namespaces configuration. Namespace: '"
-					+ data.getNamespace() + "', field: '" + fieldName + "'");
+				+ data.getNamespace() + "', field: '" + fieldName + "'");
 		}
 	}
 
@@ -3413,7 +3419,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 	 * @param userData information about the user that should be created
 	 */
 	private void handleSponsorshipInNamespace(PerunSession session, User userToBeSponsored,
-	                                          SponsoredUserData userData) throws InvalidSponsoredUserDataException, NamespaceRulesNotExistsException, InvalidLoginException, PasswordStrengthException {
+											  SponsoredUserData userData) throws InvalidSponsoredUserDataException, NamespaceRulesNotExistsException, InvalidLoginException, PasswordStrengthException {
 		String loginAttributeName = PasswordManagerModule.LOGIN_PREFIX + userData.getNamespace();
 		String loginFromAttr = getAttributeValueAsString (session, userToBeSponsored, loginAttributeName);
 
@@ -3502,8 +3508,8 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 	 * @return result of the procedure
 	 */
 	private Map<String, Object> createSingleSponsoredMemberFromCSV(PerunSession sess, Vo vo, String namespace,
-	                                                               Map<String, String> data, User sponsor,
-	                                                               LocalDate validityTo, boolean sendActivationLink, String language,
+																   Map<String, String> data, User sponsor,
+																   LocalDate validityTo, boolean sendActivationLink, String language,
 																   String url, Validation validation, List<Group> groups) {
 		for (String requiredField : SPONSORED_MEMBER_REQUIRED_FIELDS) {
 			if (!data.containsKey(requiredField)) {
@@ -3555,7 +3561,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			String login = null;
 			if (isNotBlank(namespace)) {
 				login = perunBl.getAttributesManagerBl().getAttribute(sess, user,
-						PasswordManagerModule.LOGIN_PREFIX + namespace).valueAsString();
+					PasswordManagerModule.LOGIN_PREFIX + namespace).valueAsString();
 			}
 			status.put(LOGIN, login);
 			status.put(PASSWORD, password);
@@ -3608,8 +3614,8 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 	 * @param member member to whom the member attributes will be set
 	 */
 	private void setAdditionalValues(PerunSession sess, Set<String> additionalValues, Map<String, String> data,
-			User user, Member member) throws WrongAttributeAssignmentException, WrongAttributeValueException,
-			WrongReferenceAttributeValueException {
+									 User user, Member member) throws WrongAttributeAssignmentException, WrongAttributeValueException,
+		WrongReferenceAttributeValueException {
 
 		for (String additionalValue : additionalValues) {
 			Attribute attrToSet;

@@ -10,6 +10,7 @@ import cz.metacentrum.perun.core.api.MemberGroupStatus;
 import cz.metacentrum.perun.core.api.NamespaceRules;
 import cz.metacentrum.perun.core.api.Paginated;
 import cz.metacentrum.perun.core.api.MembersPageQuery;
+import cz.metacentrum.perun.core.api.PerunPolicy;
 import cz.metacentrum.perun.core.api.RichMember;
 import cz.metacentrum.perun.core.api.Sponsorship;
 import cz.metacentrum.perun.core.api.MembershipType;
@@ -32,9 +33,11 @@ import cz.metacentrum.perun.core.api.exceptions.MemberNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.NamespaceRulesNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PasswordDeletionFailedException;
 import cz.metacentrum.perun.core.api.exceptions.PasswordOperationTimeoutException;
+import cz.metacentrum.perun.core.api.exceptions.PolicyNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.SponsorshipDoesNotExistException;
 import cz.metacentrum.perun.core.bl.DatabaseManagerBl;
 import cz.metacentrum.perun.core.bl.PerunBl;
+import cz.metacentrum.perun.core.blImpl.AuthzResolverBlImpl;
 import cz.metacentrum.perun.core.implApi.MembersManagerImplApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,19 +78,19 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	final static Logger log = LoggerFactory.getLogger(MembersManagerImpl.class);
 
 	final static String memberMappingSelectQuery = "members.id as members_id, members.user_id as members_user_id, members.vo_id as members_vo_id, members.status as members_status, " +
-			"members.sponsored as members_sponsored, " +
-			"members.created_at as members_created_at, members.created_by as members_created_by, members.modified_by as members_modified_by, members.modified_at as members_modified_at, " +
-			"members.created_by_uid as members_created_by_uid, members.modified_by_uid as members_modified_by_uid";
+		"members.sponsored as members_sponsored, " +
+		"members.created_at as members_created_at, members.created_by as members_created_by, members.modified_by as members_modified_by, members.modified_at as members_modified_at, " +
+		"members.created_by_uid as members_created_by_uid, members.modified_by_uid as members_modified_by_uid";
 
 	final static String groupsMembersMappingSelectQuery = memberMappingSelectQuery + ", groups_members.membership_type as membership_type, " +
-			"groups_members.source_group_id as source_group_id, groups_members.source_group_status as source_group_status, groups_members.group_id as group_id";
+		"groups_members.source_group_id as source_group_id, groups_members.source_group_status as source_group_status, groups_members.group_id as group_id";
 
 	final static String groupsAssignedMembersMappingSelectQuery = groupsMembersMappingSelectQuery + ", groups_resources_state.status as group_resource_status";
 
 	final static String memberSponsorshipSelectQuery = "members_sponsored.active as members_sponsored_active, " +
-			"members_sponsored.sponsored_id as members_sponsored_sponsored_id, " +
-			"members_sponsored.sponsor_id as members_sponsored_sponsor_id, " +
-			"members_sponsored.validity_to as members_sponsored_validity_to";
+		"members_sponsored.sponsored_id as members_sponsored_sponsored_id, " +
+		"members_sponsored.sponsor_id as members_sponsored_sponsor_id, " +
+		"members_sponsored.validity_to as members_sponsored_validity_to";
 
 	private final JdbcPerunTemplate jdbc;
 	private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
@@ -102,9 +105,9 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	 */
 	static final RowMapper<Member> MEMBER_MAPPER = (rs, i) -> {
 		Member member = new Member(rs.getInt("members_id"), rs.getInt("members_user_id"), rs.getInt("members_vo_id"), Status.getStatus(rs.getInt("members_status")),
-				rs.getString("members_created_at"), rs.getString("members_created_by"), rs.getString("members_modified_at"), rs.getString("members_modified_by"),
-				rs.getInt("members_created_by_uid") == 0 ? null : rs.getInt("members_created_by_uid"),
-				rs.getInt("members_modified_by_uid") == 0 ? null : rs.getInt("members_modified_by_uid"));
+			rs.getString("members_created_at"), rs.getString("members_created_by"), rs.getString("members_modified_at"), rs.getString("members_modified_by"),
+			rs.getInt("members_created_by_uid") == 0 ? null : rs.getInt("members_created_by_uid"),
+			rs.getInt("members_modified_by_uid") == 0 ? null : rs.getInt("members_modified_by_uid"));
 		member.setSponsored(rs.getBoolean("members_sponsored"));
 		return member;
 	};
@@ -251,9 +254,9 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 			int newId = Utils.getNewId(jdbc, "members_id_seq");
 
 			jdbc.update("insert into members (id, vo_id, user_id, status, created_by,created_at,modified_by,modified_at,created_by_uid,modified_by_uid) "
-							+ "values (?,?,?,?,?," + Compatibility.getSysdate() + ",?," + Compatibility.getSysdate() + ",?,?)",
-					newId, vo.getId(),
-					user.getId(), Status.INVALID.getCode(), sess.getPerunPrincipal().getActor(), sess.getPerunPrincipal().getActor(), sess.getPerunPrincipal().getUserId(), sess.getPerunPrincipal().getUserId());
+					+ "values (?,?,?,?,?," + Compatibility.getSysdate() + ",?," + Compatibility.getSysdate() + ",?,?)",
+				newId, vo.getId(),
+				user.getId(), Status.INVALID.getCode(), sess.getPerunPrincipal().getActor(), sess.getPerunPrincipal().getActor(), sess.getPerunPrincipal().getUserId(), sess.getPerunPrincipal().getUserId());
 
 			member = new Member(newId, user.getId(), vo.getId(), Status.INVALID);
 
@@ -270,8 +273,8 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	public Member getMemberByUserId(PerunSession sess, Vo vo, int userId) throws MemberNotExistsException {
 		try {
 			return jdbc.queryForObject("SELECT " + memberMappingSelectQuery + " FROM" +
-							" members WHERE members.user_id=? AND members.vo_id=?",
-					MEMBER_MAPPER, userId, vo.getId());
+					" members WHERE members.user_id=? AND members.vo_id=?",
+				MEMBER_MAPPER, userId, vo.getId());
 		} catch (EmptyResultDataAccessException ex) {
 			throw new MemberNotExistsException("user id " + userId + " is not member of VO " + vo);
 		} catch (RuntimeException err) {
@@ -283,8 +286,8 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	public List<Member> getMembersByUser(PerunSession sess, User user) {
 		try {
 			return jdbc.query("SELECT " + memberMappingSelectQuery + " FROM" +
-							" members WHERE members.user_id=?",
-					MEMBER_MAPPER, user.getId());
+					" members WHERE members.user_id=?",
+				MEMBER_MAPPER, user.getId());
 		} catch (EmptyResultDataAccessException ex) {
 			throw new InternalErrorException(new MemberNotExistsException("user=" + user));
 		} catch (RuntimeException err) {
@@ -305,8 +308,8 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	public List<Member> getMembersByUserWithStatus(PerunSession sess, User user, Status status) {
 		try {
 			return jdbc.query("SELECT " + memberMappingSelectQuery + " FROM" +
-							" members WHERE members.user_id=? and members.status"+Compatibility.castToInteger()+"=?",
-					MEMBER_MAPPER, user.getId(), status.getCode());
+					" members WHERE members.user_id=? and members.status"+Compatibility.castToInteger()+"=?",
+				MEMBER_MAPPER, user.getId(), status.getCode());
 		} catch (EmptyResultDataAccessException ex) {
 			throw new InternalErrorException(new MemberNotExistsException("user=" + user));
 		} catch (RuntimeException err) {
@@ -318,7 +321,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	public Member getMemberById(PerunSession sess, int id) throws MemberNotExistsException {
 		try {
 			return jdbc.queryForObject("SELECT " + memberMappingSelectQuery + " FROM members "
-					+ " WHERE members.id=?", MEMBER_MAPPER, id);
+				+ " WHERE members.id=?", MEMBER_MAPPER, id);
 		} catch (EmptyResultDataAccessException ex) {
 			throw new MemberNotExistsException("member id=" + id);
 		} catch (RuntimeException err) {
@@ -368,8 +371,8 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	public Member getMemberByUserExtSource(PerunSession sess, Vo vo, UserExtSource userExtSource) throws MemberNotExistsException {
 		try {
 			return jdbc.queryForObject("SELECT " + memberMappingSelectQuery + " FROM members, user_ext_sources WHERE " +
-							"user_ext_sources.login_ext=? AND user_ext_sources.ext_sources_id=? AND members.vo_id=? AND members.user_id=user_ext_sources.user_id",
-					MEMBER_MAPPER, userExtSource.getLogin(), userExtSource.getExtSource().getId(), vo.getId());
+					"user_ext_sources.login_ext=? AND user_ext_sources.ext_sources_id=? AND members.vo_id=? AND members.user_id=user_ext_sources.user_id",
+				MEMBER_MAPPER, userExtSource.getLogin(), userExtSource.getExtSource().getId(), vo.getId());
 		} catch (EmptyResultDataAccessException ex) {
 			throw new MemberNotExistsException("member userExtSource=" + userExtSource);
 		} catch (RuntimeException err) {
@@ -422,9 +425,9 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 		try {
 			return this.namedParameterJdbcTemplate.query("SELECT " + memberMappingSelectQuery +
-							" FROM members JOIN users ON members.user_id=users.id WHERE members.user_id IN ( :ids ) AND members.vo_id=:vo " +
-							"ORDER BY users.last_name, users.first_name",
-					parameters, MEMBER_MAPPER);
+					" FROM members JOIN users ON members.user_id=users.id WHERE members.user_id IN ( :ids ) AND members.vo_id=:vo " +
+					"ORDER BY users.last_name, users.first_name",
+				parameters, MEMBER_MAPPER);
 		} catch (EmptyResultDataAccessException ex) {
 			return new ArrayList<>();
 		} catch (RuntimeException ex) {
@@ -449,7 +452,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 		try {
 			return this.namedParameterJdbcTemplate.query("SELECT " + memberMappingSelectQuery + " FROM members WHERE members.user_id IN ( :ids ) AND members.vo_id=:vo",
-					parameters, MEMBER_MAPPER);
+				parameters, MEMBER_MAPPER);
 		} catch (EmptyResultDataAccessException ex) {
 			return new ArrayList<>();
 		} catch (RuntimeException ex) {
@@ -566,8 +569,8 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		try {
 			PerunPrincipal pp = session.getPerunPrincipal();
 			jdbc.update("UPDATE members_sponsored SET active=?, modified_by=?, modified_at="+Compatibility.getSysdate() +", modified_by_uid=? " +
-							"WHERE sponsored_id=? AND sponsor_id=?" ,
-					false, pp.getActor(), pp.getUserId(),sponsoredMember.getId(), sponsor.getId() );
+					"WHERE sponsored_id=? AND sponsor_id=?" ,
+				false, pp.getActor(), pp.getUserId(),sponsoredMember.getId(), sponsor.getId() );
 		} catch (RuntimeException e) {
 			throw new InternalErrorException(e);
 		}
@@ -587,7 +590,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		try {
 			return jdbc.queryForObject("SELECT " + memberSponsorshipSelectQuery + " FROM members_sponsored "
 					+ " WHERE members_sponsored.sponsor_id=? AND members_sponsored.sponsored_id=?", MEMBER_SPONSORSHIP_MAPPER,
-					sponsor.getId(), sponsoredMember.getId());
+				sponsor.getId(), sponsoredMember.getId());
 		} catch (EmptyResultDataAccessException ex) {
 			throw new SponsorshipDoesNotExistException(sponsoredMember, sponsor);
 		} catch (RuntimeException e) {
@@ -599,7 +602,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	public List<Member> getSponsoredMembers(PerunSession sess, Vo vo, User sponsor) {
 		try {
 			return jdbc.query("SELECT "+memberMappingSelectQuery+" FROM members JOIN members_sponsored ms ON (members.id=ms.sponsored_id) " +
-					"WHERE members.vo_id=? AND ms.active=? AND ms.sponsor_id=?", MEMBER_MAPPER, vo.getId(), true, sponsor.getId());
+				"WHERE members.vo_id=? AND ms.active=? AND ms.sponsor_id=?", MEMBER_MAPPER, vo.getId(), true, sponsor.getId());
 		} catch (RuntimeException e) {
 			throw new InternalErrorException(e);
 		}
@@ -609,7 +612,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	public List<Member> getSponsoredMembers(PerunSession sess, User sponsor) {
 		try {
 			return jdbc.query("SELECT "+memberMappingSelectQuery+" FROM members JOIN members_sponsored ms ON (members.id=ms.sponsored_id) " +
-					"WHERE ms.active=? AND ms.sponsor_id=?", MEMBER_MAPPER, true, sponsor.getId());
+				"WHERE ms.active=? AND ms.sponsor_id=?", MEMBER_MAPPER, true, sponsor.getId());
 		} catch (RuntimeException e) {
 			throw new InternalErrorException(e);
 		}
@@ -619,7 +622,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	public List<Member> getSponsoredMembers(PerunSession sess, Vo vo) {
 		try {
 			return jdbc.query("SELECT DISTINCT "+memberMappingSelectQuery+" FROM members JOIN members_sponsored ms ON (members.id=ms.sponsored_id) " +
-			        "WHERE members.vo_id=? AND ms.active=?", MEMBER_MAPPER, vo.getId(), true);
+				"WHERE members.vo_id=? AND ms.active=?", MEMBER_MAPPER, vo.getId(), true);
 		} catch (RuntimeException e) {
 			throw new InternalErrorException(e);
 		}
@@ -639,11 +642,11 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 		try {
 			Member result = jdbc.queryForObject("select distinct " + MembersManagerImpl.groupsMembersMappingSelectQuery +
-							" from groups_resources_state join groups on groups_resources_state.group_id=groups.id" +
+					" from groups_resources_state join groups on groups_resources_state.group_id=groups.id" +
 					" join groups_members on groups.id=groups_members.group_id join members on groups_members.member_id=members.id " +
 					" where groups_resources_state.resource_id=? and groups_resources_state.status=?::group_resource_status and members.id=?",
-					MembersManagerImpl.MEMBERS_WITH_GROUP_STATUSES_SET_EXTRACTOR, resource.getId(),
-					GroupResourceStatus.ACTIVE.toString(), member.getId());
+				MembersManagerImpl.MEMBERS_WITH_GROUP_STATUSES_SET_EXTRACTOR, resource.getId(),
+				GroupResourceStatus.ACTIVE.toString(), member.getId());
 			return result.getGroupStatus();
 		} catch (EmptyResultDataAccessException ex) {
 			return null;
@@ -659,12 +662,12 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		try {
 
 			List<Member> result = jdbc.query("select distinct " + MembersManagerImpl.groupsMembersMappingSelectQuery +
-							" from groups_resources_state join groups on groups_resources_state.group_id=groups.id" +
-							" join groups_members on groups.id=groups_members.group_id join members on groups_members.member_id=members.id " +
-							" join resources on groups_resources_state.resource_id=resources.id " +
-							" where groups_resources_state.status=?::group_resource_status and resources.facility_id=? and members.user_id=?",
-					MembersManagerImpl.MEMBERS_WITH_GROUP_STATUSES_SET_EXTRACTOR, GroupResourceStatus.ACTIVE.toString(),
-					facility.getId(), user.getId());
+					" from groups_resources_state join groups on groups_resources_state.group_id=groups.id" +
+					" join groups_members on groups.id=groups_members.group_id join members on groups_members.member_id=members.id " +
+					" join resources on groups_resources_state.resource_id=resources.id " +
+					" where groups_resources_state.status=?::group_resource_status and resources.facility_id=? and members.user_id=?",
+				MembersManagerImpl.MEMBERS_WITH_GROUP_STATUSES_SET_EXTRACTOR, GroupResourceStatus.ACTIVE.toString(),
+				facility.getId(), user.getId());
 
 			if (result != null && !result.isEmpty()) {
 
@@ -715,12 +718,12 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		//searching by user and member id
 		//searching by user uuid
 		Set<Member> members = new HashSet<>(namedParameterJdbcTemplate.query("select " + memberMappingSelectQuery +
-			" from members " +
-			" join users on members.user_id=users.id " +
-			" where " +
-			voIdQueryString +
-			sponsoredQueryString +
-			searchQuery,
+				" from members " +
+				" join users on members.user_id=users.id " +
+				" where " +
+				voIdQueryString +
+				sponsoredQueryString +
+				searchQuery,
 			namedParams, MEMBER_MAPPER));
 
 		if (vo != null) {
@@ -732,8 +735,14 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		return new ArrayList<>(members);
 	}
 
+
 	@Override
-	public Paginated<Member> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query) {
+	public Paginated<Member> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query) throws PolicyNotExistsException {
+		return getMembersPage(sess, vo, query, null);
+	}
+
+	@Override
+	public Paginated<Member> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, String policy) throws PolicyNotExistsException {
 		Map<String, List<String>> attributesToSearchBy = Utils.getDividedAttributes();
 		MapSqlParameterSource namedParams =
 			Utils.getMapSqlParameterSourceToSearchUsersOrMembers(query.getSearchString(), attributesToSearchBy);
@@ -744,17 +753,28 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		namedParams.addValue("voId", vo.getId());
 		namedParams.addValue("offset", query.getOffset());
 		namedParams.addValue("limit", query.getPageSize());
+		namedParams.addValue("userId", sess.getPerunPrincipal().getUserId());
 
 		String statusesQueryString = getVoStatusSQLConditionForMembersPage(query, namedParams);
 
 		String groupStatusesQueryString = getGroupStatusSQLConditionForMembersPage(query, namedParams);
 
+		String whereBasedOnThePolicy = getWhereConditionBasedOnThePolicy(sess, query, policy);
+
+		String groupByQuery = "GROUP BY members.user_id, members.id";
+		if (query.getGroupId() == null) {
+			groupByQuery += query.getSortColumn().getSqlGroupBy();
+		} else {
+			groupByQuery += ", users.last_name, users.first_name, groups_members.group_id, groups_members.source_group_id, groups_members.membership_type, groups_members.source_group_status";
+		}
+
 		return namedParameterJdbcTemplate.query(
-			    select +
-				" WHERE members.vo_id = (:voId)" +
+			select +
+				whereBasedOnThePolicy +
 				statusesQueryString +
 				groupStatusesQueryString +
 				searchQuery +
+				groupByQuery+
 				" ORDER BY " + query.getSortColumn().getSqlOrderBy(query) +
 				" OFFSET (:offset)" +
 				" LIMIT (:limit)"
@@ -763,11 +783,11 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 	@Override
 	public void updateSponsorshipValidity(PerunSession sess, Member sponsoredMember, User sponsor,
-	                                      LocalDate newValidity) throws SponsorshipDoesNotExistException {
+										  LocalDate newValidity) throws SponsorshipDoesNotExistException {
 		int rows = jdbc.update("UPDATE members_sponsored SET validity_to=? WHERE sponsored_id=? AND sponsor_id=?",
-				newValidity != null ? Timestamp.valueOf(newValidity.atStartOfDay()) : null,
-				sponsoredMember.getId(),
-				sponsor.getId());
+			newValidity != null ? Timestamp.valueOf(newValidity.atStartOfDay()) : null,
+			sponsoredMember.getId(),
+			sponsor.getId());
 		if (rows == 0) {
 			throw new SponsorshipDoesNotExistException(sponsoredMember, sponsor);
 		}
@@ -776,8 +796,8 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 	@Override
 	public List<Sponsorship> getSponsorshipsExpiringInRange(PerunSession sess, LocalDate from, LocalDate to) {
 		return jdbc.query("SELECT " + memberSponsorshipSelectQuery + " FROM members_sponsored WHERE active=? AND " +
-						"validity_to >= ? AND validity_to < ?",
-				MEMBER_SPONSORSHIP_MAPPER, true, from, to);
+				"validity_to >= ? AND validity_to < ?",
+			MEMBER_SPONSORSHIP_MAPPER, true, from, to);
 	}
 
 	@Override
@@ -824,7 +844,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 			namedParameterJdbcTemplate.update(
 				"update application set state=:state, modified_at=" + Compatibility.getSysdate() + ", modified_by_uid=:userId " +
-				"where id in (:ids)", parameters);
+					"where id in (:ids)", parameters);
 
 			// get all reserved logins
 			List<Pair<String, String>> logins = jdbc.query(
@@ -857,7 +877,8 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 			"SELECT " + memberMappingSelectQuery +
 				" ,count(*) OVER() AS total_count" +
 				query.getSortColumn().getSqlSelect() +
-				" FROM members JOIN users on members.user_id = users.id " +
+				" FROM members JOIN users ON members.user_id = users.id " +
+				getSQLBasedOnPolicy() +
 				query.getSortColumn().getSqlJoin();
 
 		String groupSelect =
@@ -882,6 +903,44 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 			return "";
 		}
 		return " AND " + Utils.prepareSqlWhereForUserMemberSearch(query.getSearchString(), namedParams, false);
+	}
+
+	private String getSQLBasedOnPolicy() {
+		return "LEFT OUTER JOIN (SELECT groups_members.member_id, authz.role_id, authz.vo_id" +
+			"		FROM groups" +
+			"			JOIN authz ON groups.id = authz.group_id" +
+			"			JOIN groups_members ON groups.id = groups_members.group_id" +
+			"		 WHERE authz.user_id = (:userId))" +
+			"		AS members_group ON members.id = members_group.member_id AND members.vo_id = members_group.vo_id";
+	}
+
+	private String getWhereConditionBasedOnThePolicy(PerunSession sess, MembersPageQuery query, String otherPolicy) throws PolicyNotExistsException {
+		PerunPolicy policy = AuthzResolverImpl.getPerunPolicy("filter-getMembersPage_policy");
+		if (otherPolicy != null && !otherPolicy.isEmpty()) {
+			policy = AuthzResolverImpl.getPerunPolicy(otherPolicy);
+		}
+
+		List<String> roles = new ArrayList<>();
+		for (Map<String,String> role : policy.getPerunRoles()) {
+			for (Map.Entry<String,String> entry : role.entrySet()) {
+				// Do nothing
+				if (entry.getValue() == null) continue;
+				if (entry.getValue().equals("Group")) {
+					int roleId = AuthzResolverBlImpl.getRoleIdByName(entry.getKey());
+					if (roleId == -1) {
+						log.error("Role {} not found in DB.", entry.getKey());
+						continue;
+					}
+					roles.add("members_group.role_id=" + roleId);
+				}
+			}
+		}
+		if (roles.isEmpty() || query.getGroupId() != null || AuthzResolverBlImpl.isPerunAdmin(sess)) {
+			return " WHERE members.vo_id = (:voId)";
+		}
+		return " WHERE members.vo_id = (:voId) AND (" +
+			String.join(" OR ", roles) +
+			")";
 	}
 
 	private String getVoStatusSQLConditionForMembersPage(MembersPageQuery query, MapSqlParameterSource namedParams) {

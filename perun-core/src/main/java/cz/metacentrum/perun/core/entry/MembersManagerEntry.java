@@ -50,6 +50,7 @@ import cz.metacentrum.perun.core.api.exceptions.ParentGroupNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PasswordCreationFailedException;
 import cz.metacentrum.perun.core.api.exceptions.PasswordResetMailNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PasswordStrengthException;
+import cz.metacentrum.perun.core.api.exceptions.PolicyNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PrivilegeException;
 import cz.metacentrum.perun.core.api.exceptions.ResourceNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.SponsorshipDoesNotExistException;
@@ -130,9 +131,9 @@ public class MembersManagerEntry implements MembersManager {
 		// Authorization
 		for (Member member: members) {
 			for (Group group: perunBl.getGroupsManagerBl().getAllMemberGroups(sess, member))
-			if (!AuthzResolver.authorizedInternal(sess, "deleteMembers_List<Member>_policy", member, group)) {
-				throw new PrivilegeException(sess, "deleteMembers");
-			}
+				if (!AuthzResolver.authorizedInternal(sess, "deleteMembers_List<Member>_policy", member, group)) {
+					throw new PrivilegeException(sess, "deleteMembers");
+				}
 		}
 
 		getMembersManagerBl().deleteMembers(sess, members);
@@ -1122,7 +1123,7 @@ public class MembersManagerEntry implements MembersManager {
 
 	@Override
 	public boolean canExtendMembershipWithReason(PerunSession sess, Member member) throws PrivilegeException,
-			MemberNotExistsException, ExtendMembershipException {
+		MemberNotExistsException, ExtendMembershipException {
 		Utils.checkPerunSession(sess);
 		getMembersManagerBl().checkMemberExists(sess, member);
 
@@ -1149,7 +1150,7 @@ public class MembersManagerEntry implements MembersManager {
 
 	@Override
 	public boolean canBeMemberWithReason(PerunSession sess, Vo vo, User user, String loa) throws
-			VoNotExistsException, ExtendMembershipException, PrivilegeException {
+		VoNotExistsException, ExtendMembershipException, PrivilegeException {
 		Utils.checkPerunSession(sess);
 		getPerunBl().getVosManagerBl().checkVoExists(sess, vo);
 
@@ -1273,10 +1274,10 @@ public class MembersManagerEntry implements MembersManager {
 
 	@Override
 	public RichMember createSponsoredMember(PerunSession session, SponsoredUserData data, Vo vo, User sponsor,
-	                                        LocalDate validityTo, boolean sendActivationLink, String language, String url)
-			throws PrivilegeException, AlreadyMemberException, LoginNotExistsException, PasswordCreationFailedException,
-			ExtendMembershipException, WrongAttributeValueException, ExtSourceNotExistsException, WrongReferenceAttributeValueException,
-			UserNotInRoleException, PasswordStrengthException, InvalidLoginException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException {
+											LocalDate validityTo, boolean sendActivationLink, String language, String url)
+		throws PrivilegeException, AlreadyMemberException, LoginNotExistsException, PasswordCreationFailedException,
+		ExtendMembershipException, WrongAttributeValueException, ExtSourceNotExistsException, WrongReferenceAttributeValueException,
+		UserNotInRoleException, PasswordStrengthException, InvalidLoginException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException {
 		Utils.checkPerunSession(session);
 		Utils.notNull(vo, "vo");
 
@@ -1302,10 +1303,10 @@ public class MembersManagerEntry implements MembersManager {
 
 	@Override
 	public RichMember setSponsoredMember(PerunSession session, Vo vo, User userToBeSponsored, String namespace,
-	                                     String password, String login, User sponsor, LocalDate validityTo)
-			throws PrivilegeException, AlreadyMemberException, LoginNotExistsException, PasswordCreationFailedException,
-			ExtendMembershipException, WrongAttributeValueException, ExtSourceNotExistsException, WrongReferenceAttributeValueException,
-			UserNotInRoleException, PasswordStrengthException, InvalidLoginException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException {
+										 String password, String login, User sponsor, LocalDate validityTo)
+		throws PrivilegeException, AlreadyMemberException, LoginNotExistsException, PasswordCreationFailedException,
+		ExtendMembershipException, WrongAttributeValueException, ExtSourceNotExistsException, WrongReferenceAttributeValueException,
+		UserNotInRoleException, PasswordStrengthException, InvalidLoginException, AlreadySponsorException, InvalidSponsoredUserDataException, NamespaceRulesNotExistsException {
 
 		Utils.checkPerunSession(session);
 		Utils.notNull(vo, "vo");
@@ -1338,8 +1339,8 @@ public class MembersManagerEntry implements MembersManager {
 
 	@Override
 	public List<Map<String, String>> createSponsoredMembersFromCSV(PerunSession sess, Vo vo, String namespace,
-			List<String> data, String header, User sponsor, LocalDate validityTo, boolean sendActivationLink,
-			String language, String url, List<Group> groups) throws PrivilegeException {
+																   List<String> data, String header, User sponsor, LocalDate validityTo, boolean sendActivationLink,
+																   String language, String url, List<Group> groups) throws PrivilegeException {
 		Utils.checkPerunSession(sess);
 		Utils.notNull(vo, "vo");
 		Utils.notNull(data, "names");
@@ -1351,20 +1352,20 @@ public class MembersManagerEntry implements MembersManager {
 		} else {
 			//Authorization
 			if (!AuthzResolver.authorizedInternal(sess,
-					"createSponsoredMembersFromCSV_Vo_String_List<String>_User_policy", vo, sponsor)) {
+				"createSponsoredMembersFromCSV_Vo_String_List<String>_User_policy", vo, sponsor)) {
 				throw new PrivilegeException(sess, "createSponsoredMembersFromCSV");
 			}
 		}
 
 		for (Group group : groups) {
 			if (!AuthzResolver.authorizedInternal(sess,
-					"group-createSponsoredMembersFromCSV_Vo_String_List<String>_User_policy", vo, group)) {
+				"group-createSponsoredMembersFromCSV_Vo_String_List<String>_User_policy", vo, group)) {
 				throw new PrivilegeException(sess, "createSponsoredMembersFromCSV");
 			}
 		}
 
 		return membersManagerBl
-				.createSponsoredMembersFromCSV(sess, vo, namespace, data, header, sponsor, validityTo, sendActivationLink, language, url, Validation.ASYNC, groups);
+			.createSponsoredMembersFromCSV(sess, vo, namespace, data, header, sponsor, validityTo, sendActivationLink, language, url, Validation.ASYNC, groups);
 	}
 
 	@Override
@@ -1438,7 +1439,7 @@ public class MembersManagerEntry implements MembersManager {
 
 		//Authorization
 		if (!AuthzResolver.authorizedInternal(session, "sponsored-sponsorMember_Member_User_LocalDate_policy", sponsored) ||
-		    !AuthzResolver.authorizedInternal(session, "sponsor-sponsorMember_Member_User_LocalDate_policy", sponsor)) {
+			!AuthzResolver.authorizedInternal(session, "sponsor-sponsorMember_Member_User_LocalDate_policy", sponsor)) {
 			throw new PrivilegeException(session, "sponsorMember");
 		}
 		//create the link between sponsored and sponsoring users
@@ -1643,7 +1644,7 @@ public class MembersManagerEntry implements MembersManager {
 
 		//Authorization
 		if (!AuthzResolver.authorizedInternal(sess, "sponsored-removeSponsor_Member_User_policy", sponsoredMember) ||
-		    !AuthzResolver.authorizedInternal(sess, "sponsor-removeSponsor_Member_User_policy", sponsorToRemove)) {
+			!AuthzResolver.authorizedInternal(sess, "sponsor-removeSponsor_Member_User_policy", sponsorToRemove)) {
 			throw new PrivilegeException(sess, "removeSponsor");
 		}
 
@@ -1663,7 +1664,12 @@ public class MembersManagerEntry implements MembersManager {
 	}
 
 	@Override
-	public Paginated<RichMember> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, List<String> attrNames) throws VoNotExistsException, PrivilegeException, GroupNotExistsException {
+	public Paginated<RichMember> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, List<String> attrNames) throws VoNotExistsException, PrivilegeException, GroupNotExistsException, PolicyNotExistsException {
+		return getMembersPage(sess, vo, query, attrNames, null);
+	}
+
+	@Override
+	public Paginated<RichMember> getMembersPage(PerunSession sess, Vo vo, MembersPageQuery query, List<String> attrNames, String policy) throws VoNotExistsException, PrivilegeException, GroupNotExistsException, PolicyNotExistsException {
 		Utils.checkPerunSession(sess);
 		perunBl.getVosManagerBl().checkVoExists(sess, vo);
 
@@ -1682,7 +1688,7 @@ public class MembersManagerEntry implements MembersManager {
 			throw new IllegalArgumentException("Group status cannot be used to sort VO members.");
 		}
 
-		Paginated<RichMember> result = membersManagerBl.getMembersPage(sess, vo, query, attrNames);
+		Paginated<RichMember> result = membersManagerBl.getMembersPage(sess, vo, query, attrNames, policy);
 
 		if (query.getGroupId() == null) {
 			result.setData(getPerunBl().getMembersManagerBl().filterOnlyAllowedAttributes(sess, result.getData()));
@@ -1696,9 +1702,9 @@ public class MembersManagerEntry implements MembersManager {
 
 	@Override
 	public void updateSponsorshipValidity(PerunSession sess, Member sponsoredMember, User sponsor,
-	                                      LocalDate newValidity)
-			throws PrivilegeException, SponsorshipDoesNotExistException, MemberNotExistsException,
-			       UserNotExistsException {
+										  LocalDate newValidity)
+		throws PrivilegeException, SponsorshipDoesNotExistException, MemberNotExistsException,
+		UserNotExistsException {
 		Utils.checkPerunSession(sess);
 		Utils.notNull(sponsoredMember, "sponsoredMember");
 		Utils.notNull(sponsor, "sponsor");
@@ -1714,7 +1720,7 @@ public class MembersManagerEntry implements MembersManager {
 		}
 
 		if (!AuthzResolver.authorizedInternal(sess, "updateSponsorshipValidity_Member_User_LocalDate", memberVo,
-				sponsor) ||
+			sponsor) ||
 			!AuthzResolver.authorizedInternal(sess, "sponsoredMember-updateSponsorshipValidity_Member_User_LocalDate", sponsoredMember)) {
 			throw new PrivilegeException("updateSponsorshipValidity");
 		}
@@ -1816,8 +1822,8 @@ public class MembersManagerEntry implements MembersManager {
 		MemberWithSponsors memberWithSponsors = new MemberWithSponsors(member);
 
 		List<Sponsor> sponsors = getPerunBl().getUsersManagerBl().getSponsors(sess, member).stream()
-				.map(user -> membersManagerBl.convertUserToSponsor(sess, user, member))
-				.collect(Collectors.toList());
+			.map(user -> membersManagerBl.convertUserToSponsor(sess, user, member))
+			.collect(Collectors.toList());
 		memberWithSponsors.setSponsors(sponsors);
 
 		return memberWithSponsors;

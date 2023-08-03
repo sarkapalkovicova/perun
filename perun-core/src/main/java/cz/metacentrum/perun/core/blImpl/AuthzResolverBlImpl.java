@@ -200,7 +200,7 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 	private static boolean mfaAuthorized(PerunSession sess, List<Map<String, String>> mfaRules, Map<String, Set<Integer>> mapOfBeans) {
 		try {
 			return !BeansUtils.getCoreConfig().isEnforceMfa() || sess.getPerunPrincipal().getRoles().hasRole(Role.MFA)
-						|| hasMFASkippableRole(sess) || !requiresMfa(sess, mfaRules, mapOfBeans);
+				|| hasMFASkippableRole(sess) || !requiresMfa(sess, mfaRules, mapOfBeans);
 		} catch (RoleManagementRulesNotExistsException e) {
 			throw new InternalErrorException("Error checking system roles", e);
 		}
@@ -269,7 +269,7 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 				throw new InternalErrorException("Object of type " + objectType + "could not be checked for MFA criticality.");
 			}
 		} catch (MemberNotExistsException | GroupNotExistsException | UserNotExistsException | VoNotExistsException | HostNotExistsException |
-			UserExtSourceNotExistsException | FacilityNotExistsException | ResourceNotExistsException e) {
+				 UserExtSourceNotExistsException | FacilityNotExistsException | ResourceNotExistsException e) {
 			throw new InternalErrorException(e);
 		}
 	}
@@ -384,12 +384,12 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 		//Authorization based on the user
 		if (app.getUser() != null && sess.getPerunPrincipal().getUserId() == app.getUser().getId()) {
 			return true;
-		//Authorization based on the extSourceName and extSourceLogin
+			//Authorization based on the extSourceName and extSourceLogin
 		} else if (Objects.equals(app.getCreatedBy(), sess.getPerunPrincipal().getActor()) &&
 			Objects.equals(app.getExtSourceName(), sess.getPerunPrincipal().getExtSourceName()) &&
 			Objects.equals(app.getExtSourceType(), sess.getPerunPrincipal().getExtSourceType())) {
 			return true;
-		//Authorization based on additional identifiers
+			//Authorization based on additional identifiers
 		} else if (principalShibIdentityProvider != null &&
 			principalShibIdentityProvider.equals(appShibIdentityProvider) &&
 			extSourcesWithMultipleIdentifiers.contains(principalShibIdentityProvider) &&
@@ -528,8 +528,8 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 			actionType.equals(ActionType.READ_PUBLIC) ||
 			actionType.equals(ActionType.READ_VO)) &&
 			(sess.getPerunPrincipal().getRoles().hasRole(Role.RPC) ||
-			sess.getPerunPrincipal().getRoles().hasRole(Role.PERUNOBSERVER) ||
-			sess.getPerunPrincipal().getRoles().hasRole(Role.ENGINE))) {
+				sess.getPerunPrincipal().getRoles().hasRole(Role.PERUNOBSERVER) ||
+				sess.getPerunPrincipal().getRoles().hasRole(Role.ENGINE))) {
 			return true;
 		}
 
@@ -2717,13 +2717,13 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 			.forEach(member -> authzRoles.putAuthzRole(Role.MEMBERSHIP, Vo.class, member.getVoId()));
 
 		perunBl.getResourcesManagerBl().getResources(sess, user, List.of(Status.VALID, Status.INVALID, Status.EXPIRED), List.of(MemberGroupStatus.VALID, MemberGroupStatus.EXPIRED), List.of(GroupResourceStatus.ACTIVE))
-				.forEach(resource -> {
-					authzRoles.putAuthzRole(Role.MEMBERSHIP, Resource.class, resource.getId());
-					authzRoles.putAuthzRole(Role.MEMBERSHIP, Facility.class, resource.getFacilityId());
-				});
+			.forEach(resource -> {
+				authzRoles.putAuthzRole(Role.MEMBERSHIP, Resource.class, resource.getId());
+				authzRoles.putAuthzRole(Role.MEMBERSHIP, Facility.class, resource.getFacilityId());
+			});
 
 		perunBl.getGroupsManagerBl().getUserGroups(sess, user, List.of(Status.VALID, Status.INVALID, Status.EXPIRED), List.of(MemberGroupStatus.VALID, MemberGroupStatus.EXPIRED))
-				.forEach(group -> authzRoles.putAuthzRole(Role.MEMBERSHIP, Group.class, group.getId()));
+			.forEach(group -> authzRoles.putAuthzRole(Role.MEMBERSHIP, Group.class, group.getId()));
 
 		return authzRoles;
 	}
@@ -3058,10 +3058,10 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 				if (roleObject == null) {
 					//If principal does not have the role, this inner list's result is false
 					if (!sess.getPerunPrincipal().getRoles().hasRole(role)) authorized = false;
-				//If there is no corresponding type of object in the perunBeans map
+					//If there is no corresponding type of object in the perunBeans map
 				} else if (!mapOfBeans.containsKey(roleObject)) {
 					authorized = false;
-				// If policy role is connected to some object, like VOADMIN->Vo
+					// If policy role is connected to some object, like VOADMIN->Vo
 				} else {
 					//traverse all related objects from perun which are relevant for the authorized method
 					for (Integer objectId : mapOfBeans.get(roleObject)) {
@@ -4258,7 +4258,7 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 		// check assigning entity for MFA requirements
 		try {
 			if (BeansUtils.getCoreConfig().isEnforceMfa() && isAnyObjectMfaCritical(sess, Arrays.asList(assigningEntity))
-			 && !sess.getPerunPrincipal().getRoles().hasRole(Role.MFA) && !hasMFASkippableRole(sess)) {
+				&& !sess.getPerunPrincipal().getRoles().hasRole(Role.MFA) && !hasMFASkippableRole(sess)) {
 				throw new MfaPrivilegeException("Multi-Factor authentication is required - assigning entity is critical.");
 			}
 		} catch (RoleManagementRulesNotExistsException e) {
@@ -4455,5 +4455,15 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 	 */
 	private static boolean sessionHasMfa(PerunSession sess) {
 		return sess.getPerunPrincipal().getAdditionalInformations().containsKey(ACR_MFA);
+	}
+
+	/**
+	 * Return id of the role by its name.
+	 *
+	 * @param name - name of the role
+	 * @return - id of the role
+	 */
+	public static int getRoleIdByName(String name) {
+		return authzResolverImpl.getRoleIdByName(name);
 	}
 }
