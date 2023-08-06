@@ -638,6 +638,9 @@ perun_policies:
       - ENGINE:
       - FACILITYADMIN: Facility
       - FACILITYOBSERVER: Facility
+      - RESOURCESELFSERVICE: Facility
+      - RESOURCEADMIN: Facility
+      - RESOURCEOBSERVER: Facility
       - PERUNOBSERVER:
       - SPREGAPPLICATION:
     include_policies:
@@ -726,6 +729,7 @@ perun_policies:
       - FACILITYADMIN:
       - FACILITYOBSERVER:
       - PERUNOBSERVER:
+      - SPREGAPPLICATION:
       - PROXY:
     include_policies:
       - default_policy
@@ -735,6 +739,7 @@ perun_policies:
       - FACILITYADMIN: Facility
       - FACILITYOBSERVER: Facility
       - PERUNOBSERVER:
+      - SPREGAPPLICATION:
       - PROXY:
     include_policies:
       - default_policy
@@ -3619,6 +3624,8 @@ perun_policies:
       - GROUPOBSERVER:
       - GROUPMEMBERSHIPMANAGER:
       - PERUNOBSERVER:
+      - VOADMIN:
+      - VOOBSERVER:
     include_policies:
       - default_policy
 

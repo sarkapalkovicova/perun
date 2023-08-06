@@ -210,7 +210,31 @@ perun_policies:
       - GROUPADMIN: Group
       - GROUPOBSERVER: Group
       - GROUPMEMBERSHIPMANAGER: Group
-      - PERUNOBSERVER: Group
+      - PERUNOBSERVER:
+      - VOADMIN:
+      - VOOBSERVER:
+    include_policies:
+      - default_policy
+
+  test_filter-getMembersPage_policy-vo:
+    policy_roles:
+      - GROUPADMIN: Group
+      - GROUPOBSERVER: Group
+      - GROUPMEMBERSHIPMANAGER: Group
+      - PERUNOBSERVER:
+      - VOADMIN: Vo
+      - VOOBSERVER:
+    include_policies:
+      - default_policy
+
+  test_filter-getMembersPage_policy-voobserver:
+    policy_roles:
+      - GROUPADMIN: Group
+      - GROUPOBSERVER: Group
+      - GROUPMEMBERSHIPMANAGER: Group
+      - PERUNOBSERVER:
+      - VOADMIN:
+      - VOOBSERVER: Vo
     include_policies:
       - default_policy
 

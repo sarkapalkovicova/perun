@@ -2286,6 +2286,16 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 	}
 
 	/**
+	 * Returns true if the perun principal inside the perun session is Perun Observer.
+	 *
+	 * @param sess perun session
+	 * @return true if the perun principal is top group creator.
+	 */
+	public static boolean isPerunObserver(PerunSession sess) {
+		return sess.getPerunPrincipal().getRoles().hasRole(Role.PERUNOBSERVER);
+	}
+
+	/**
 	 * Returns true if the perun principal inside the perun session is top group creator.
 	 *
 	 * @param sess perun session

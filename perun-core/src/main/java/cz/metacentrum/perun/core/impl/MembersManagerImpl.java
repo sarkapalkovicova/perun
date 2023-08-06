@@ -935,7 +935,15 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 				}
 			}
 		}
-		if (roles.isEmpty() || query.getGroupId() != null || AuthzResolverBlImpl.isPerunAdmin(sess)) {
+
+		boolean ignoreGroupRelation = AuthzResolverBlImpl.isPerunAdmin(sess) || AuthzResolverBlImpl.isVoAdmin(sess) || AuthzResolverBlImpl.isVoObserver(sess) || AuthzResolverBlImpl.isPerunObserver(sess);
+		if (roles.isEmpty() || query.getGroupId() != null || ignoreGroupRelation) {
+			System.out.println("ignoreGroupRelation: " + ignoreGroupRelation);
+			System.out.println("isPerunAdmin: " + AuthzResolverBlImpl.isPerunAdmin(sess));
+			System.out.println("isVoAdmin: " + AuthzResolverBlImpl.isVoAdmin(sess));
+			System.out.println("isVoObserver: " + AuthzResolverBlImpl.isVoObserver(sess));
+			System.out.println("isGroupAdmin: " + AuthzResolverBlImpl.isGroupAdmin(sess));
+			System.out.println("isPerunObserver: " + AuthzResolverBlImpl.isPerunObserver(sess));
 			return " WHERE members.vo_id = (:voId)";
 		}
 		return " WHERE members.vo_id = (:voId) AND (" +
