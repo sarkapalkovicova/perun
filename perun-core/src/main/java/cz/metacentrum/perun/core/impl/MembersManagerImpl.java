@@ -12,6 +12,7 @@ import cz.metacentrum.perun.core.api.Paginated;
 import cz.metacentrum.perun.core.api.MembersPageQuery;
 import cz.metacentrum.perun.core.api.PerunPolicy;
 import cz.metacentrum.perun.core.api.RichMember;
+import cz.metacentrum.perun.core.api.Role;
 import cz.metacentrum.perun.core.api.Sponsorship;
 import cz.metacentrum.perun.core.api.MembershipType;
 import cz.metacentrum.perun.core.api.Pair;
@@ -759,7 +760,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 		String groupStatusesQueryString = getGroupStatusSQLConditionForMembersPage(query, namedParams);
 
-		String whereBasedOnThePolicy = getWhereConditionBasedOnThePolicy(sess, query, policy);
+		String whereBasedOnThePolicy = getWhereConditionBasedOnThePolicy(sess, query, policy, vo);
 
 		String groupByQuery = "GROUP BY members.user_id, members.id";
 		if (query.getGroupId() == null) {
@@ -914,7 +915,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 			"		AS members_group ON members.id = members_group.member_id AND members.vo_id = members_group.vo_id";
 	}
 
-	private String getWhereConditionBasedOnThePolicy(PerunSession sess, MembersPageQuery query, String otherPolicy) throws PolicyNotExistsException {
+	private String getWhereConditionBasedOnThePolicy(PerunSession sess, MembersPageQuery query, String otherPolicy, Vo vo) throws PolicyNotExistsException {
 		PerunPolicy policy = AuthzResolverImpl.getPerunPolicy("filter-getMembersPage_policy");
 		if (otherPolicy != null && !otherPolicy.isEmpty()) {
 			policy = AuthzResolverImpl.getPerunPolicy(otherPolicy);
@@ -936,14 +937,10 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 			}
 		}
 
-		boolean ignoreGroupRelation = AuthzResolverBlImpl.isPerunAdmin(sess) || AuthzResolverBlImpl.isVoAdmin(sess) || AuthzResolverBlImpl.isVoObserver(sess) || AuthzResolverBlImpl.isPerunObserver(sess);
+		// Check if user is VO admin in vo
+		boolean ignoreGroupRelation = AuthzResolverBlImpl.isPerunAdmin(sess) || AuthzResolverBlImpl.isPerunObserver(sess) || isVoAdminOrObserver(sess, vo);
 		if (roles.isEmpty() || query.getGroupId() != null || ignoreGroupRelation) {
-			System.out.println("ignoreGroupRelation: " + ignoreGroupRelation);
-			System.out.println("isPerunAdmin: " + AuthzResolverBlImpl.isPerunAdmin(sess));
-			System.out.println("isVoAdmin: " + AuthzResolverBlImpl.isVoAdmin(sess));
-			System.out.println("isVoObserver: " + AuthzResolverBlImpl.isVoObserver(sess));
-			System.out.println("isGroupAdmin: " + AuthzResolverBlImpl.isGroupAdmin(sess));
-			System.out.println("isPerunObserver: " + AuthzResolverBlImpl.isPerunObserver(sess));
+			log.debug("Skipping policy for members page ("+ignoreGroupRelation+"), "+AuthzResolverBlImpl.isPerunAdmin(sess)+", "+AuthzResolverBlImpl.isVoAdmin(sess)+", "+AuthzResolverBlImpl.isVoObserver(sess)+", "+AuthzResolverBlImpl.isPerunObserver(sess)+", "+roles.isEmpty()+", "+query.getGroupId());
 			return " WHERE members.vo_id = (:voId)";
 		}
 		return " WHERE members.vo_id = (:voId) AND (" +
@@ -977,6 +974,19 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 			}
 		}
 		return groupStatusesQueryString;
+	}
+
+	private boolean isVoAdminOrObserver(PerunSession sess, Vo vo) {
+		try {
+			jdbc.query("SELECT 1 FROM authz WHERE user_id=? AND vo_id=? AND (role_id=? OR role_id=?)",
+				(rs, i) -> {
+					// If query returns at least one row, user is vo admin
+					return true;
+				}, sess.getPerunPrincipal().getUserId(), vo.getId(), AuthzResolverBlImpl.getRoleIdByName(Role.VOADMIN), AuthzResolverBlImpl.getRoleIdByName(Role.VOOBSERVER));
+		} catch (InternalErrorException e) {
+			log.error("Error during checking if user is vo admin of vo {}", vo, e);
+		}
+		return false;
 	}
 
 }
