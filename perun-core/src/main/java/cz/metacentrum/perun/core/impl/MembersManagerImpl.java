@@ -940,7 +940,6 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		// Check if user is VO admin in vo
 		boolean ignoreGroupRelation = AuthzResolverBlImpl.isPerunAdmin(sess) || AuthzResolverBlImpl.isPerunObserver(sess) || isVoAdminOrObserver(sess, vo);
 		if (roles.isEmpty() || query.getGroupId() != null || ignoreGroupRelation) {
-			log.debug("Skipping policy for members page ("+ignoreGroupRelation+"), "+AuthzResolverBlImpl.isPerunAdmin(sess)+", "+AuthzResolverBlImpl.isVoAdmin(sess)+", "+AuthzResolverBlImpl.isVoObserver(sess)+", "+AuthzResolverBlImpl.isPerunObserver(sess)+", "+roles.isEmpty()+", "+query.getGroupId());
 			return " WHERE members.vo_id = (:voId)";
 		}
 		return " WHERE members.vo_id = (:voId) AND (" +
@@ -978,15 +977,11 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 	private boolean isVoAdminOrObserver(PerunSession sess, Vo vo) {
 		try {
-			jdbc.query("SELECT 1 FROM authz WHERE user_id=? AND vo_id=? AND (role_id=? OR role_id=?)",
-				(rs, i) -> {
-					// If query returns at least one row, user is vo admin
-					return true;
-				}, sess.getPerunPrincipal().getUserId(), vo.getId(), AuthzResolverBlImpl.getRoleIdByName(Role.VOADMIN), AuthzResolverBlImpl.getRoleIdByName(Role.VOOBSERVER));
+			var query = jdbc.query("SELECT 1 FROM authz WHERE user_id=? AND vo_id=? AND (role_id=? OR role_id=?)", (rs, i) -> true,sess.getPerunPrincipal().getUserId(), vo.getId(), AuthzResolverBlImpl.getRoleIdByName(Role.VOADMIN), AuthzResolverBlImpl.getRoleIdByName(Role.VOOBSERVER));
+			return !query.isEmpty();
 		} catch (InternalErrorException e) {
 			log.error("Error during checking if user is vo admin of vo {}", vo, e);
 		}
 		return false;
 	}
-
 }

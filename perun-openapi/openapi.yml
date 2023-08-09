@@ -389,9 +389,14 @@ components:
           items:
             $ref: '#/components/schemas/AttributePolicyCollection'
         criticalActions:
-          type: array
-          items:
-            $ref: '#/components/schemas/AttributeAction'
+          type: object
+          description: "Represents types of actions (READ, WRITE) that users can perform upon attributes and if they are critical globally or not."
+          additionalProperties:
+            type: boolean
+          example: {
+            READ: false,
+            WRITE: true,
+          }
 
     AuditEvent:
       type: object
@@ -2470,7 +2475,7 @@ components:
             type: array
             items:
               $ref: "#/components/schemas/BanOnFacility"
-              
+
     ListOfEnrichedBansOnFacilitiesResponse:
       description: "return List<EnrichedBanOnFacility>"
       content:
@@ -3889,7 +3894,7 @@ paths:
               properties:
                 role: { type: string, nullable: false }
                 user: { type: integer, nullable: false }
-                
+
   /json/authzResolver/unsetRole/u:
     post:
       tags:
@@ -4271,7 +4276,7 @@ paths:
       tags:
         - AuthzResolver
       operationId: getRoleComplementaryObjectsWithAuthorizedGroups
-      summary: Returns map of role names with map of corresponding complementary objects (perun beans) 
+      summary: Returns map of role names with map of corresponding complementary objects (perun beans)
         together with list of authorized groups where user is member.
       parameters:
         - $ref: '#/components/parameters/userIdLiterally'
@@ -7714,6 +7719,7 @@ paths:
         - $ref: '#/components/parameters/attributeDefinitionId'
         - {name: action, in: query, schema: { $ref: '#/components/schemas/AttributeAction' }, required: true}
         - {name: critical, description: "if action should be marked as critical", schema: { type: boolean }, in: query, required: true}
+        - {name: global, description: "if action should be globally critical (for all objects)", schema: { type: boolean }, in: query, required: false}
       responses:
         '200':
           $ref: '#/components/responses/VoidResponse'
@@ -9913,7 +9919,7 @@ paths:
           $ref: '#/components/responses/BooleanResponse'
         default:
           $ref: '#/components/responses/ExceptionResponse'
-    
+
   /urlinjsonout/usersManager/setLogin:
     post:
       tags:
@@ -10211,7 +10217,7 @@ paths:
         - MembersManager
       operationId: getRichMembersNoUserAttributes
       summary: Returns list of all RichMembers for specified VO. User attributes aren't included in the returned
-          objects
+        objects
       description: Get richMembers for VO with member attributes (without user attributes).
       parameters:
         - $ref: '#/components/parameters/voId'
@@ -11321,8 +11327,8 @@ paths:
       tags:
         - FacilitiesManager
       operationId: getFacilitiesByAttributeWithAttributes
-      summary: Searches (partially!) for facilities with the attribute 'attributeName' and its value 'attributeValue'. 
-                  Found Facilities are returned along with attributes listed in 'attrNames'.
+      summary: Searches (partially!) for facilities with the attribute 'attributeName' and its value 'attributeValue'.
+        Found Facilities are returned along with attributes listed in 'attrNames'.
       parameters:
         - $ref: '#/components/parameters/attributeName'
         - $ref: '#/components/parameters/attributeValue'
@@ -12795,7 +12801,7 @@ paths:
           $ref: '#/components/responses/ListOfBanOnFacilitiesResponse'
         default:
           $ref: '#/components/responses/ExceptionResponse'
-          
+
   /json/facilitiesManager/getEnrichedBansForFacility:
     get:
       tags:
@@ -12810,7 +12816,7 @@ paths:
           $ref: '#/components/responses/ListOfEnrichedBansOnFacilitiesResponse'
         default:
           $ref: '#/components/responses/ExceptionResponse'
-          
+
   /json/facilitiesManager/getEnrichedBansForUser:
     get:
       tags:
@@ -15933,7 +15939,7 @@ paths:
                 - banOnVo
               properties:
                 banOnVo: { $ref: '#/components/schemas/BanOnVo' }
-  
+
   /json/vosManager/getBanById:
     get:
       tags:
@@ -16107,11 +16113,11 @@ paths:
         - RegistrarManager
       operationId: sendInvitationsFromCsv
       summary: Send invitations with link to VO / Group application form from provided csv data
-          If VO or Group have non-empty attribute urn:perun:[vo/group]:attribute-def:def:applicationURL
-          content is used as link to application form. Otherwise link is automatically generated based on
-          required AUTHZ in template and registrar url set in /etc/perun/perun-registrar.properties.
-
-          General errors result in exception being thrown, single failures are skipped and added to result
+        If VO or Group have non-empty attribute urn:perun:[vo/group]:attribute-def:def:applicationURL
+        content is used as link to application form. Otherwise link is automatically generated based on
+        required AUTHZ in template and registrar url set in /etc/perun/perun-registrar.properties.
+        
+        General errors result in exception being thrown, single failures are skipped and added to result
       responses:
         '200':
           $ref: '#/components/responses/MapStringStringResponse'
@@ -18994,7 +19000,7 @@ paths:
       tags:
         - Searcher
       operationId: getAttributesMatchResources
-      summary: Get list of resources that have attributes with partially matched values 
+      summary: Get list of resources that have attributes with partially matched values
         if allowPartialMatchForString is set to true, else with exactly matched values.
       responses:
         '200':

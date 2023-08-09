@@ -372,7 +372,7 @@ public interface AttributesManagerBl {
 	 */
 	List<Attribute> getAttributes(PerunSession sess, Member member, List<String> attrNames);
 
-    /**
+	/**
 	 * Get all attributes associated with the group which have name in list attrNames (empty too).
 	 * Virtual attribute too.
 	 *
@@ -612,7 +612,7 @@ public interface AttributesManagerBl {
 	 * @throws WrongAttributeAssignmentException when passed non-entityless attribute
 	 */
 	Map<String, Attribute> getEntitylessAttributesWithKeys(PerunSession sess, String attrName)
-			throws AttributeNotExistsException, WrongAttributeAssignmentException;
+		throws AttributeNotExistsException, WrongAttributeAssignmentException;
 
 	/**
 	 * Get entityless attributes mapped by their keys.
@@ -626,7 +626,7 @@ public interface AttributesManagerBl {
 	 * @throws WrongAttributeAssignmentException when passed non-entityless attribute
 	 */
 	Map<String, Attribute> getEntitylessAttributesWithKeys(PerunSession sess, String attrName, List<String> keys)
-			throws AttributeNotExistsException, WrongAttributeAssignmentException;
+		throws AttributeNotExistsException, WrongAttributeAssignmentException;
 
 	/**
 	 * Returns list of Keys which fits the attributeDefinition.
@@ -1570,7 +1570,7 @@ public interface AttributesManagerBl {
 		User user,
 		Member member,
 		boolean forceAttributesChecks) throws WrongAttributeAssignmentException, WrongReferenceAttributeValueException,
-				AttributeNotExistsException, WrongAttributeValueException, MemberResourceMismatchException;
+		AttributeNotExistsException, WrongAttributeValueException, MemberResourceMismatchException;
 
 	/**
 	 * Take list of required attributes and set those which are empty and can be filled, then check them all.
@@ -2518,24 +2518,24 @@ public interface AttributesManagerBl {
 	 */
 	List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Resource resource, Group group, boolean withGroupAttributes) throws GroupResourceMismatchException;
 
-  /**
-   * Get group-resource attributes which are required by the services.
-   *
-   * @param sess session
-   * @param services services
-   * @param resource resource
-   * @param group group
-   * @param withGroupAttributes get also group attributes (which is required by the service) for this group
-   * @return list of attributes which are required by the service.
-   * @throws GroupResourceMismatchException group resource mismatch exception
-   */
-  List<Attribute> getRequiredAttributes(
-      PerunSession sess,
-      List<Service> services,
-      Resource resource,
-      Group group,
-      boolean withGroupAttributes)
-      throws GroupResourceMismatchException;
+	/**
+	 * Get group-resource attributes which are required by the services.
+	 *
+	 * @param sess session
+	 * @param services services
+	 * @param resource resource
+	 * @param group group
+	 * @param withGroupAttributes get also group attributes (which is required by the service) for this group
+	 * @return list of attributes which are required by the service.
+	 * @throws GroupResourceMismatchException group resource mismatch exception
+	 */
+	List<Attribute> getRequiredAttributes(
+		PerunSession sess,
+		List<Service> services,
+		Resource resource,
+		Group group,
+		boolean withGroupAttributes)
+		throws GroupResourceMismatchException;
 
 	List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Resource resource, Group group) throws GroupResourceMismatchException;
 
@@ -4419,7 +4419,7 @@ public interface AttributesManagerBl {
 	 * @throws WrongAttributeAssignmentException
 	 */
 	Attribute mergeAttributeValue(PerunSession sess, User user, Attribute attribute) throws WrongAttributeValueException,
-				 WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
 
 	/**
 	 * Merges attribute value if the attribute type is list or map. In other cases it only stores new value.
@@ -4436,7 +4436,7 @@ public interface AttributesManagerBl {
 	 * @throws WrongAttributeAssignmentException
 	 */
 	Attribute mergeAttributeValue(PerunSession sess, Member member, Attribute attribute) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
 
 	/**
 	 * Merges attribute value if the attribute type is list or map. In other cases it only stores new value.
@@ -4453,7 +4453,7 @@ public interface AttributesManagerBl {
 	 * @throws WrongAttributeAssignmentException
 	 */
 	Attribute mergeAttributeValue(PerunSession sess, Group group, Attribute attribute) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
 
 	/**
 	 * Merges attribute value if the attribute type is list or map. In other cases it only stores new value.
@@ -4472,7 +4472,7 @@ public interface AttributesManagerBl {
 	 * @throws WrongAttributeAssignmentException
 	 */
 	Attribute mergeAttributeValueInNestedTransaction(PerunSession sess, User user, Attribute attribute) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
 
 	/**
 	 * Merges attribute value if the attribute type is list or map. In other cases it only stores new value.
@@ -4491,7 +4491,7 @@ public interface AttributesManagerBl {
 	 * @throws WrongAttributeAssignmentException
 	 */
 	Attribute mergeAttributeValueInNestedTransaction(PerunSession sess, Member member, Attribute attribute) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
 
 	/**
 	 * Merges attributes values if the attribute type is list or map. In other cases it only stores new value.
@@ -4507,7 +4507,7 @@ public interface AttributesManagerBl {
 	 * @throws WrongAttributeAssignmentException
 	 */
 	void mergeAttributesValues(PerunSession sess, User user, List<Attribute> attributes)  throws WrongAttributeValueException,
-				 WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
 
 	/**
 	 * Merges attributes values if the attribute type is list or map. In other cases it only stores new value.
@@ -4523,7 +4523,7 @@ public interface AttributesManagerBl {
 	 * @throws WrongAttributeAssignmentException
 	 */
 	void mergeAttributesValues(PerunSession sess, Member member, List<Attribute> attributes)  throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException;
 
 	/**
 	 * This method check validity of value on all attributes which depends on the attributes in richAttr object.
@@ -4820,6 +4820,16 @@ public interface AttributesManagerBl {
 	boolean isAttributeActionCritical(PerunSession sess, AttributeDefinition attr, AttributeAction action);
 
 	/**
+	 * Checks if the action is critical on given attribute for all objects.
+	 *
+	 * @param sess session
+	 * @param attr attribute definition
+	 * @param action critical action
+	 * @return true if action is globally critical, false otherwise
+	 */
+	boolean isAttributeActionGloballyCritical(PerunSession sess, AttributeDefinition attr, AttributeAction action);
+
+	/**
 	 * Returns critical actions on given attribute.
 	 *
 	 * @param sess session
@@ -4829,18 +4839,19 @@ public interface AttributesManagerBl {
 	List<AttributeAction> getCriticalAttributeActions(PerunSession sess, int attrId);
 
 	/**
-	 * Marks the action on attribute as critical, which may require additional authentication of user 
+	 * Marks the action on attribute as critical, which may require additional authentication of user
 	 * performing that action on attribute.
 	 *
 	 * @param sess session
 	 * @param attr attribute definition
 	 * @param action critical action
 	 * @param critical true if action should be set critical, false to non-critical
+	 * @param global true if action should be globally critical, false if action should be critical only for critical objects
 	 *
 	 * @throws RelationExistsException if trying to mark already critical action
 	 * @throws RelationNotExistsException if trying to unmark not critical action
 	 */
-	void setAttributeActionCriticality(PerunSession sess, AttributeDefinition attr, AttributeAction action, boolean critical) throws RelationExistsException, RelationNotExistsException;
+	void setAttributeActionCriticality(PerunSession sess, AttributeDefinition attr, AttributeAction action, boolean critical, boolean global) throws RelationExistsException, RelationNotExistsException;
 
 	/**
 	 * Returns list of definitions of IdP attributes that are filled to fedInfo
@@ -4857,4 +4868,3 @@ public interface AttributesManagerBl {
 	 */
 	List<String> getAllNamespaces(PerunSession sess);
 }
-

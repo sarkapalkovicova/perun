@@ -3680,8 +3680,8 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		for(AttributeDefinition ad: attrDefs) {
 			assertTrue(attributesManager.isFromNamespace(sess, ad, NS_MEMBER_ATTR) ||
-					attributesManager.isFromNamespace(sess, ad, AttributesManager.NS_RESOURCE_ATTR) ||
-					attributesManager.isFromNamespace(sess, ad, AttributesManager.NS_MEMBER_RESOURCE_ATTR));
+				attributesManager.isFromNamespace(sess, ad, AttributesManager.NS_RESOURCE_ATTR) ||
+				attributesManager.isFromNamespace(sess, ad, AttributesManager.NS_MEMBER_RESOURCE_ATTR));
 			assertTrue(ad.getWritable());
 		}
 
@@ -7468,7 +7468,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		perun.getAttributesManagerBl().setAttribute(sess, member2, group, m2Attribute);
 
 		Map<Member, List<Attribute>> requiredAttributes = perun.getAttributesManagerBl()
-				.getRequiredAttributes(sess, service, Arrays.asList(member1, member2), group);
+			.getRequiredAttributes(sess, service, Arrays.asList(member1, member2), group);
 
 		assertThat(requiredAttributes.get(member1)).containsExactly(m1Attribute);
 		assertThat(requiredAttributes.get(member2)).containsExactly(m2Attribute);
@@ -7504,7 +7504,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		perun.getAttributesManagerBl().setAttribute(sess, group2, g2Attribute);
 
 		Map<Group, List<Attribute>> requiredAttributes = perun.getAttributesManagerBl()
-				.getRequiredAttributesForGroups(sess, service, Arrays.asList(group1, group2));
+			.getRequiredAttributesForGroups(sess, service, Arrays.asList(group1, group2));
 
 		assertThat(requiredAttributes.get(group1)).containsExactly(g1Attribute);
 		assertThat(requiredAttributes.get(group2)).containsExactly(g2Attribute);
@@ -10013,9 +10013,9 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		Attribute attribute = setUpMemberGroupAttribute().get(0);
 
 		assertTrue("Writing to attribute should be critical by default", perun.getAttributesManagerBl().isAttributeActionCritical(sess, attribute, AttributeAction.WRITE));
-		assertThat(perun.getAttributesManager().getAttributeRules(sess, attribute.getId()).getCriticalActions()).containsExactly(AttributeAction.valueOf("WRITE"));
+		assertTrue(perun.getAttributesManager().getAttributeRules(sess, attribute.getId()).getCriticalActions().containsKey(AttributeAction.WRITE));
 
-		perun.getAttributesManager().setAttributeActionCriticality(sess, attribute, AttributeAction.WRITE, false);
+		perun.getAttributesManager().setAttributeActionCriticality(sess, attribute, AttributeAction.WRITE, false, false);
 		assertFalse("Writing to attribute should not be critical", perun.getAttributesManagerBl().isAttributeActionCritical(sess, attribute, AttributeAction.WRITE));
 		assertThat(perun.getAttributesManager().getAttributeRules(sess, attribute.getId()).getCriticalActions()).isEmpty();
 	}
@@ -10029,13 +10029,37 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		member = setUpMember();
 		Attribute attribute = setUpMemberGroupAttribute().get(0);
 
-		assertThrows(RelationExistsException.class, () -> perun.getAttributesManagerBl().setAttributeActionCriticality(sess, attribute, AttributeAction.WRITE, true));
-		assertThrows(RelationNotExistsException.class, () -> perun.getAttributesManagerBl().setAttributeActionCriticality(sess, attribute, AttributeAction.READ, false));
+		assertThrows(RelationExistsException.class, () -> perun.getAttributesManagerBl().setAttributeActionCriticality(sess, attribute, AttributeAction.WRITE, true, false));
+		assertThrows(RelationNotExistsException.class, () -> perun.getAttributesManagerBl().setAttributeActionCriticality(sess, attribute, AttributeAction.READ, false, false));
 
 		assertFalse(perun.getAttributesManagerBl().isAttributeActionCritical(sess, attribute, AttributeAction.READ));
-		perun.getAttributesManager().setAttributeActionCriticality(sess, attribute, AttributeAction.READ, true);
+		perun.getAttributesManager().setAttributeActionCriticality(sess, attribute, AttributeAction.READ, true, false);
 		assertTrue("Reading attribute should be critical", perun.getAttributesManagerBl().isAttributeActionCritical(sess, attribute, AttributeAction.READ));
-		assertThat(perun.getAttributesManager().getAttributeRules(sess, attribute.getId()).getCriticalActions()).containsExactlyInAnyOrder(AttributeAction.WRITE, AttributeAction.READ);
+		assertThat(perun.getAttributesManager().getAttributeRules(sess, attribute.getId()).getCriticalActions()
+			.keySet()).containsExactlyInAnyOrder(AttributeAction.WRITE, AttributeAction.READ);
+	}
+
+	@Test
+	public void setGloballyCriticalOperations() throws Exception {
+		System.out.println(CLASS_NAME + "setGloballyCriticalOperations");
+
+		vo = setUpVo();
+		group = setUpGroup();
+		member = setUpMember();
+		Attribute attribute = setUpMemberGroupAttribute().get(0);
+
+		assertThrows(RelationExistsException.class, () -> perun.getAttributesManagerBl().setAttributeActionCriticality(sess, attribute, AttributeAction.WRITE, true, false));
+		assertThrows(RelationNotExistsException.class, () -> perun.getAttributesManagerBl().setAttributeActionCriticality(sess, attribute, AttributeAction.READ, false, false));
+
+		assertFalse(perun.getAttributesManagerBl().isAttributeActionCritical(sess, attribute, AttributeAction.READ));
+		perun.getAttributesManager().setAttributeActionCriticality(sess, attribute, AttributeAction.READ, true, true);
+		assertTrue("This attribute should be marked as globally critical", perun.getAttributesManagerBl().isAttributeActionGloballyCritical(sess, attribute, AttributeAction.READ));
+		assertTrue("Reading attribute should be critical", perun.getAttributesManagerBl().isAttributeActionCritical(sess, attribute, AttributeAction.READ));
+
+		Map<AttributeAction, Boolean> criticalActionMap = perun.getAttributesManager().getAttributeRules(sess, attribute.getId()).getCriticalActions();
+		assertThat(criticalActionMap.keySet()).containsExactlyInAnyOrder(AttributeAction.WRITE, AttributeAction.READ);
+		assertTrue(criticalActionMap.containsKey(AttributeAction.WRITE) && !criticalActionMap.get(AttributeAction.WRITE));
+		assertTrue(criticalActionMap.containsKey(AttributeAction.READ) && criticalActionMap.get(AttributeAction.READ));
 	}
 
 	@Test
@@ -10092,7 +10116,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//get vo_toEmail_def attributes for user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl, sess, user1, vo_toEmail_def);
@@ -10128,7 +10152,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//get vo_toEmail_def attributes for member1OfUser1
 		List<RichAttribute> ra_member1_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl, sess, member1OfUser1, vo_toEmail_def);
@@ -10155,7 +10179,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//get vo_toEmail_def attributes for group1InVo1
 		List<RichAttribute> ra_group1_invo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl, sess, group1InVo1, vo_toEmail_def);
@@ -10182,7 +10206,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//get vo_toEmail_def attributes for resource1InVo1
 		List<RichAttribute> ra_res1_invo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl, sess, resource1InVo1, vo_toEmail_def);
@@ -10209,7 +10233,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//get vo_toEmail_def attributes for Vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl, sess, vo1, vo_toEmail_def);
@@ -10236,7 +10260,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//get vo_toEmail_def attributes for facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl, sess, facility2, vo_toEmail_def);
@@ -10264,7 +10288,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//get vo_toEmail_def attributes for host2OnFacility2
 		List<RichAttribute> ra_host2_onfac2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl, sess, host2OnFacility2, vo_toEmail_def);
@@ -10292,7 +10316,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//get vo_toEmail_def attributes for userExtSource1
 		List<RichAttribute> ra_userExtSrc1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl, sess, userExtSource1, vo_toEmail_def);
@@ -10319,11 +10343,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//get vo_toEmail_def attributes for user3 and facility2
 		List<RichAttribute> ra_user3_fac2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, facility2, vo_toEmail_def);
+			sess, user3, facility2, vo_toEmail_def);
 		List<Attribute> attrs_user3_fac2 = new ArrayList<>();
 		ra_user3_fac2.forEach(ra -> attrs_user3_fac2.add(ra.getAttribute()));
 
@@ -10331,7 +10355,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		assertTrue(attrs_user3_fac2.contains(vo2_toEmail_attribute));
 
 		List<RichAttribute> ra_user2_fac2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user2, facility2, vo_toEmail_def);
+			sess, user2, facility2, vo_toEmail_def);
 		List<Attribute> attrs_user2_fac2 = new ArrayList<>();
 		ra_user2_fac2.forEach(ra -> attrs_user2_fac2.add(ra.getAttribute()));
 
@@ -10347,7 +10371,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForVoAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getVoAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//get all vo_toEmail_def attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl, sess, vo_toEmail_def);
@@ -10370,11 +10394,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find phone attributes for user1
 		List<RichAttribute> ra_phone_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, user_phone_atr_def);
+			sess, user1, user_phone_atr_def);
 		List<Attribute> attrs_phone_user1 = new ArrayList<>();
 		ra_phone_user1.forEach(ra -> attrs_phone_user1.add(ra.getAttribute()));
 
@@ -10383,7 +10407,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email attribute for user2
 		List<RichAttribute> ra_email_user2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user2, user_email_atr_def);
+			sess, user2, user_email_atr_def);
 		List<Attribute> attrs_email_user2 = new ArrayList<>();
 		ra_email_user2.forEach(ra -> attrs_email_user2.add(ra.getAttribute()));
 
@@ -10399,11 +10423,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find phone attributes for member2OfUser1 - disallowed member
 		List<RichAttribute> ra_phone_member2U1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, user_phone_atr_def);
+			sess, member2OfUser1, user_phone_atr_def);
 		List<Attribute> attrs_phone_member2U1 = new ArrayList<>();
 		ra_phone_member2U1.forEach(ra -> attrs_phone_member2U1.add(ra.getAttribute()));
 
@@ -10411,7 +10435,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email attributes for member1OfUser3
 		List<RichAttribute> ra_phone_member1U3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser3, user_email_atr_def);
+			sess, member1OfUser3, user_email_atr_def);
 		List<Attribute> attrs_phone_member1U3 = new ArrayList<>();
 		ra_phone_member1U3.forEach(ra -> attrs_phone_member1U3.add(ra.getAttribute()));
 
@@ -10427,11 +10451,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find user preferred email attributes in group1InVo1
 		List<RichAttribute> ra_email_group1VO1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo1, user_email_atr_def);
+			sess, group1InVo1, user_email_atr_def);
 		List<Attribute> attrs_email_group1VO1 = new ArrayList<>();
 		ra_email_group1VO1.forEach(ra -> attrs_email_group1VO1.add(ra.getAttribute()));
 
@@ -10442,7 +10466,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find user preferred email attributes in group2InVo2
 		List<RichAttribute> ra_email_group2VO2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo2, user_email_atr_def);
+			sess, group2InVo2, user_email_atr_def);
 		List<Attribute> attrs_email_group2VO2 = new ArrayList<>();
 		ra_email_group2VO2.forEach(ra -> attrs_email_group2VO2.add(ra.getAttribute()));
 
@@ -10459,11 +10483,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find user phone attributes by resource2InVo1
 		List<RichAttribute> ra_phone_res2VO1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource2InVo1, user_phone_atr_def);
+			sess, resource2InVo1, user_phone_atr_def);
 		List<Attribute> attrs_phone_res2VO1 = new ArrayList<>();
 		ra_phone_res2VO1.forEach(ra -> attrs_phone_res2VO1.add(ra.getAttribute()));
 
@@ -10472,7 +10496,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find user preffered email attributes by resource1InVo2
 		List<RichAttribute> ra_phone_res1VO2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo2, user_email_atr_def);
+			sess, resource1InVo2, user_email_atr_def);
 		List<Attribute> attrs_phone_res1VO2 = new ArrayList<>();
 		ra_phone_res1VO2.forEach(ra -> attrs_phone_res1VO2.add(ra.getAttribute()));
 
@@ -10489,11 +10513,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find user phone attributes by vo1
 		List<RichAttribute> ra_phone_VO1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, user_phone_atr_def);
+			sess, vo1, user_phone_atr_def);
 		List<Attribute> attrs_phone_VO1 = new ArrayList<>();
 		ra_phone_VO1.forEach(ra -> attrs_phone_VO1.add(ra.getAttribute()));
 
@@ -10504,7 +10528,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find user preferred email attributes by vo2
 		List<RichAttribute> ra_email_VO2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, user_email_atr_def);
+			sess, vo2, user_email_atr_def);
 		List<Attribute> attrs_email_VO2 = new ArrayList<>();
 		ra_email_VO2.forEach(ra -> attrs_email_VO2.add(ra.getAttribute()));
 
@@ -10521,11 +10545,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find user phone attributes by facility2
 		List<RichAttribute> ra_phone_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, user_phone_atr_def);
+			sess, facility2, user_phone_atr_def);
 		List<Attribute> attrs_phone_facility2 = new ArrayList<>();
 		ra_phone_facility2.forEach(ra -> attrs_phone_facility2.add(ra.getAttribute()));
 
@@ -10537,7 +10561,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find user preferred email attributes by facility3
 		List<RichAttribute> ra_email_facility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility3, user_email_atr_def);
+			sess, facility3, user_email_atr_def);
 		List<Attribute> attrs_email_facility3 = new ArrayList<>();
 		ra_email_facility3.forEach(ra -> attrs_email_facility3.add(ra.getAttribute()));
 
@@ -10554,11 +10578,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find user phone attributes by host1OnFacility2
 		List<RichAttribute> ra_phone_host1_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, user_phone_atr_def);
+			sess, host1OnFacility2, user_phone_atr_def);
 		List<Attribute> attrs_phone_host1_facility2 = new ArrayList<>();
 		ra_phone_host1_facility2.forEach(ra -> attrs_phone_host1_facility2.add(ra.getAttribute()));
 
@@ -10570,7 +10594,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find user preferred email attributes by host1OnFacility3
 		List<RichAttribute> ra_email_host1_facility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility3, user_email_atr_def);
+			sess, host1OnFacility3, user_email_atr_def);
 		List<Attribute> attrs_email_facility3 = new ArrayList<>();
 		ra_email_host1_facility3.forEach(ra -> attrs_email_facility3.add(ra.getAttribute()));
 
@@ -10587,11 +10611,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find phone attributes for userExtSource1
 		List<RichAttribute> ra_phone_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, user_phone_atr_def);
+			sess, userExtSource1, user_phone_atr_def);
 		List<Attribute> attrs_phone_userExtSource1 = new ArrayList<>();
 		ra_phone_userExtSource1.forEach(ra -> attrs_phone_userExtSource1.add(ra.getAttribute()));
 
@@ -10600,7 +10624,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email attribute for userExtSource2
 		List<RichAttribute> ra_email_userExtSource2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource2, user_email_atr_def);
+			sess, userExtSource2, user_email_atr_def);
 		List<Attribute> attrs_email_userExtSource2 = new ArrayList<>();
 		ra_email_userExtSource2.forEach(ra -> attrs_email_userExtSource2.add(ra.getAttribute()));
 
@@ -10616,11 +10640,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all phone user attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user_phone_atr_def);
+			sess, user_phone_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -10640,11 +10664,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find phone user attributes for user1 and facility1
 		List<RichAttribute> ra_user1_fac1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility1, user_phone_atr_def);
+			sess, user1, facility1, user_phone_atr_def);
 		List<Attribute> attrs_user1_fac1 = new ArrayList<>();
 		ra_user1_fac1.forEach(ra -> attrs_user1_fac1.add(ra.getAttribute()));
 
@@ -10653,7 +10677,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find phone user attributes for user2 and facility1
 		List<RichAttribute> ra_user2_fac1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user2, facility1, user_phone_atr_def);
+			sess, user2, facility1, user_phone_atr_def);
 		List<Attribute> attrs_user2_fac1 = new ArrayList<>();
 		ra_user2_fac1.forEach(ra -> attrs_user2_fac1.add(ra.getAttribute()));
 
@@ -10670,11 +10694,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find phone member attributes for user1
 		List<RichAttribute> ra_phone_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, member_phone_atr_def);
+			sess, user1, member_phone_atr_def);
 		List<Attribute> attrs_phone_user1 = new ArrayList<>();
 		ra_phone_user1.forEach(ra -> attrs_phone_user1.add(ra.getAttribute()));
 
@@ -10683,7 +10707,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email member attributes for user3
 		List<RichAttribute> ra_email_user3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, member_email_atr_def);
+			sess, user3, member_email_atr_def);
 		List<Attribute> attrs_email_user3 = new ArrayList<>();
 		ra_email_user3.forEach(ra -> attrs_email_user3.add(ra.getAttribute()));
 
@@ -10700,11 +10724,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find phone member attributes for member1OfUser1
 		List<RichAttribute> ra_phone_member1U1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, member_phone_atr_def);
+			sess, member1OfUser1, member_phone_atr_def);
 		List<Attribute> attrs_phone_member1U1 = new ArrayList<>();
 		ra_phone_member1U1.forEach(ra -> attrs_phone_member1U1.add(ra.getAttribute()));
 
@@ -10713,7 +10737,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email member attributes for member2OfUser1
 		List<RichAttribute> ra_email_member2U1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, member_email_atr_def);
+			sess, member2OfUser1, member_email_atr_def);
 		List<Attribute> attrs_email_user3 = new ArrayList<>();
 		ra_email_member2U1.forEach(ra -> attrs_email_user3.add(ra.getAttribute()));
 
@@ -10728,11 +10752,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find phone member attributes for group1InVo1
 		List<RichAttribute> ra_phone_group1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo1, member_phone_atr_def);
+			sess, group1InVo1, member_phone_atr_def);
 		List<Attribute> attrs_phone_group1Vo1 = new ArrayList<>();
 		ra_phone_group1Vo1.forEach(ra -> attrs_phone_group1Vo1.add(ra.getAttribute()));
 
@@ -10743,7 +10767,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email member attributes for group2InVo2
 		List<RichAttribute> ra_phone_group2Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo2, member_email_atr_def);
+			sess, group2InVo2, member_email_atr_def);
 		List<Attribute> attrs_phone_group2Vo2 = new ArrayList<>();
 		ra_phone_group2Vo2.forEach(ra -> attrs_phone_group2Vo2.add(ra.getAttribute()));
 
@@ -10760,11 +10784,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find phone member attributes for resource1InVo1
 		List<RichAttribute> ra_phone_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo1, member_phone_atr_def);
+			sess, resource1InVo1, member_phone_atr_def);
 		List<Attribute> attrs_phone_res1Vo1 = new ArrayList<>();
 		ra_phone_res1Vo1.forEach(ra -> attrs_phone_res1Vo1.add(ra.getAttribute()));
 
@@ -10775,7 +10799,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email member attributes for resource1InVo2
 		List<RichAttribute> ra_phone_res1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo2, member_email_atr_def);
+			sess, resource1InVo2, member_email_atr_def);
 		List<Attribute> attrs_phone_res1Vo2 = new ArrayList<>();
 		ra_phone_res1Vo2.forEach(ra -> attrs_phone_res1Vo2.add(ra.getAttribute()));
 
@@ -10792,11 +10816,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find phone member attributes for vo1
 		List<RichAttribute> ra_phone_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, member_phone_atr_def);
+			sess, vo1, member_phone_atr_def);
 		List<Attribute> attrs_phone_vo1 = new ArrayList<>();
 		ra_phone_vo1.forEach(ra -> attrs_phone_vo1.add(ra.getAttribute()));
 
@@ -10807,7 +10831,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email member attributes for vo2
 		List<RichAttribute> ra_phone_vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, member_email_atr_def);
+			sess, vo2, member_email_atr_def);
 		List<Attribute> attrs_phone_vo2 = new ArrayList<>();
 		ra_phone_vo2.forEach(ra -> attrs_phone_vo2.add(ra.getAttribute()));
 
@@ -10824,11 +10848,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find phone member attributes for facility1
 		List<RichAttribute> ra_phone_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility1, member_phone_atr_def);
+			sess, facility1, member_phone_atr_def);
 		List<Attribute> attrs_phone_facility1 = new ArrayList<>();
 		ra_phone_facility1.forEach(ra -> attrs_phone_facility1.add(ra.getAttribute()));
 
@@ -10839,7 +10863,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email member attributes for facility2
 		List<RichAttribute> ra_phone_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, member_email_atr_def);
+			sess, facility2, member_email_atr_def);
 		List<Attribute> attrs_phone_facility2 = new ArrayList<>();
 		ra_phone_facility2.forEach(ra -> attrs_phone_facility2.add(ra.getAttribute()));
 
@@ -10858,11 +10882,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find phone member attributes for host1OnFacility1
 		List<RichAttribute> ra_phone_host1F1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility1, member_phone_atr_def);
+			sess, host1OnFacility1, member_phone_atr_def);
 		List<Attribute> attrs_phone_host1F1 = new ArrayList<>();
 		ra_phone_host1F1.forEach(ra -> attrs_phone_host1F1.add(ra.getAttribute()));
 
@@ -10873,7 +10897,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email member attributes for host1OnFacility2
 		List<RichAttribute> ra_phone_host1F2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, member_email_atr_def);
+			sess, host1OnFacility2, member_email_atr_def);
 		List<Attribute> attrs_phone_host1F2 = new ArrayList<>();
 		ra_phone_host1F2.forEach(ra -> attrs_phone_host1F2.add(ra.getAttribute()));
 
@@ -10892,11 +10916,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find phone member attributes for userExtSource1
 		List<RichAttribute> ra_phone_userExtSrc1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, member_phone_atr_def);
+			sess, userExtSource1, member_phone_atr_def);
 		List<Attribute> attrs_phone_userExtSrc1 = new ArrayList<>();
 		ra_phone_userExtSrc1.forEach(ra -> attrs_phone_userExtSrc1.add(ra.getAttribute()));
 
@@ -10905,7 +10929,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email member attributes for userExtSource3
 		List<RichAttribute> ra_email_userExtSrc3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource3, member_email_atr_def);
+			sess, userExtSource3, member_email_atr_def);
 		List<Attribute> attrs_email_userExtSrc3 = new ArrayList<>();
 		ra_email_userExtSrc3.forEach(ra -> attrs_email_userExtSrc3.add(ra.getAttribute()));
 
@@ -10922,11 +10946,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all phone member attributes
 		List<RichAttribute> ra_phone_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member_phone_atr_def);
+			sess, member_phone_atr_def);
 		List<Attribute> attrs_phone_all = new ArrayList<>();
 		ra_phone_all.forEach(ra -> attrs_phone_all.add(ra.getAttribute()));
 
@@ -10945,11 +10969,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find email member attributes for user3 and facility1
 		List<RichAttribute> ra_user3_fac1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, facility1, member_email_atr_def);
+			sess, user3, facility1, member_email_atr_def);
 		List<Attribute> attrs_user3_fac1 = new ArrayList<>();
 		ra_user3_fac1.forEach(ra -> attrs_user3_fac1.add(ra.getAttribute()));
 
@@ -10958,7 +10982,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find phone member attributes for user1 and facility2
 		List<RichAttribute> ra_user1_fac2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility2, member_phone_atr_def);
+			sess, user1, facility2, member_phone_atr_def);
 		List<Attribute> attrs_user1_fac2 = new ArrayList<>();
 		ra_user1_fac2.forEach(ra -> attrs_user1_fac2.add(ra.getAttribute()));
 
@@ -10976,11 +11000,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find email group attributes by user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, group_fromEmail_atr_def);
+			sess, user1, group_fromEmail_atr_def);
 		List<Attribute> attrs_user1 = new ArrayList<>();
 		ra_user1.forEach(ra -> attrs_user1.add(ra.getAttribute()));
 
@@ -10998,11 +11022,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find email group attributes by member1OfUser1
 		List<RichAttribute> ra_member1OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, group_fromEmail_atr_def);
+			sess, member1OfUser1, group_fromEmail_atr_def);
 		List<Attribute> attrs_member1OfUser1 = new ArrayList<>();
 		ra_member1OfUser1.forEach(ra -> attrs_member1OfUser1.add(ra.getAttribute()));
 
@@ -11013,7 +11037,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by member2OfUser1
 		List<RichAttribute> ra_member2OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, group_fromEmail_atr_def);
+			sess, member2OfUser1, group_fromEmail_atr_def);
 		List<Attribute> attrs_member2OfUser1 = new ArrayList<>();
 		ra_member2OfUser1.forEach(ra -> attrs_member2OfUser1.add(ra.getAttribute()));
 
@@ -11028,11 +11052,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find email group attributes by group1InVo1
 		List<RichAttribute> ra_group1InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo1, group_fromEmail_atr_def);
+			sess, group1InVo1, group_fromEmail_atr_def);
 		List<Attribute> attrs_group1InVo1 = new ArrayList<>();
 		ra_group1InVo1.forEach(ra -> attrs_group1InVo1.add(ra.getAttribute()));
 
@@ -11041,7 +11065,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by group1InVo2
 		List<RichAttribute> ra_group1InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo2, group_fromEmail_atr_def);
+			sess, group1InVo2, group_fromEmail_atr_def);
 		List<Attribute> attrs_group1InVo2 = new ArrayList<>();
 		ra_group1InVo2.forEach(ra -> attrs_group1InVo2.add(ra.getAttribute()));
 
@@ -11057,11 +11081,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find email group attributes by resource1InVo1
 		List<RichAttribute> ra_resource1InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo1, group_fromEmail_atr_def);
+			sess, resource1InVo1, group_fromEmail_atr_def);
 		List<Attribute> attrs_resource1InVo1 = new ArrayList<>();
 		ra_resource1InVo1.forEach(ra -> attrs_resource1InVo1.add(ra.getAttribute()));
 
@@ -11071,7 +11095,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by resource2InVo2
 		List<RichAttribute> ra_resource2InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource2InVo2, group_fromEmail_atr_def);
+			sess, resource2InVo2, group_fromEmail_atr_def);
 		List<Attribute> attrs_resource2InVo2 = new ArrayList<>();
 		ra_resource2InVo2.forEach(ra -> attrs_resource2InVo2.add(ra.getAttribute()));
 
@@ -11087,11 +11111,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find email group attributes by vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, group_fromEmail_atr_def);
+			sess, vo1, group_fromEmail_atr_def);
 		List<Attribute> attrs_vo1 = new ArrayList<>();
 		ra_vo1.forEach(ra -> attrs_vo1.add(ra.getAttribute()));
 
@@ -11109,11 +11133,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find email group attributes by facility1
 		List<RichAttribute> ra_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility1, group_fromEmail_atr_def);
+			sess, facility1, group_fromEmail_atr_def);
 		List<Attribute> attrs_facility1 = new ArrayList<>();
 		ra_facility1.forEach(ra -> attrs_facility1.add(ra.getAttribute()));
 
@@ -11123,7 +11147,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, group_fromEmail_atr_def);
+			sess, facility2, group_fromEmail_atr_def);
 		List<Attribute> attrs_facility2 = new ArrayList<>();
 		ra_facility2.forEach(ra -> attrs_facility2.add(ra.getAttribute()));
 
@@ -11141,11 +11165,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find email group attributes by host1OnFacility1
 		List<RichAttribute> ra_host1OnFacility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility1, group_fromEmail_atr_def);
+			sess, host1OnFacility1, group_fromEmail_atr_def);
 		List<Attribute> attrs_host1OnFacility1 = new ArrayList<>();
 		ra_host1OnFacility1.forEach(ra -> attrs_host1OnFacility1.add(ra.getAttribute()));
 
@@ -11155,7 +11179,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by host1OnFacility2
 		List<RichAttribute> ra_host1OnFacility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, group_fromEmail_atr_def);
+			sess, host1OnFacility2, group_fromEmail_atr_def);
 		List<Attribute> attrs_host1OnFacility2 = new ArrayList<>();
 		ra_host1OnFacility2.forEach(ra -> attrs_host1OnFacility2.add(ra.getAttribute()));
 
@@ -11173,11 +11197,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find email group attributes by userExtSource1
 		List<RichAttribute> ra_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, group_fromEmail_atr_def);
+			sess, userExtSource1, group_fromEmail_atr_def);
 		List<Attribute> attrs_userExtSource1 = new ArrayList<>();
 		ra_userExtSource1.forEach(ra -> attrs_userExtSource1.add(ra.getAttribute()));
 
@@ -11195,11 +11219,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all email group attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group_fromEmail_atr_def);
+			sess, group_fromEmail_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -11220,11 +11244,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
 
 		//find email group attributes by group1InVo1 and member1OfUser1
 		List<RichAttribute> ra_group1Vo1_mem1U1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, group1InVo1, group_fromEmail_atr_def);
+			sess, member1OfUser1, group1InVo1, group_fromEmail_atr_def);
 		List<Attribute> attrs_group1Vo1_mem1U1 = new ArrayList<>();
 		ra_group1Vo1_mem1U1.forEach(ra -> attrs_group1Vo1_mem1U1.add(ra.getAttribute()));
 
@@ -11233,7 +11257,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by group1InVo2 and member2OfUser1
 		List<RichAttribute> ra_group1Vo2_mem2U1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, group1InVo2, group_fromEmail_atr_def);
+			sess, member2OfUser1, group1InVo2, group_fromEmail_atr_def);
 		List<Attribute> attrs_group1Vo2_mem2U1 = new ArrayList<>();
 		ra_group1Vo2_mem2U1.forEach(ra -> attrs_group1Vo2_mem2U1.add(ra.getAttribute()));
 
@@ -11248,11 +11272,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
 
 		//find email group attributes by member1OfUser1 and resource1InVo1
 		List<RichAttribute> ra_member1U1_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, resource1InVo1, group_fromEmail_atr_def);
+			sess, member1OfUser1, resource1InVo1, group_fromEmail_atr_def);
 		List<Attribute> attrs_member1U1_res1Vo1 = new ArrayList<>();
 		ra_member1U1_res1Vo1.forEach(ra -> attrs_member1U1_res1Vo1.add(ra.getAttribute()));
 
@@ -11262,7 +11286,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by member1OfUser3 and resource1InVo1
 		List<RichAttribute> ra_member1U3_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser3, resource1InVo1, group_fromEmail_atr_def);
+			sess, member1OfUser3, resource1InVo1, group_fromEmail_atr_def);
 		List<Attribute> attrs_member1U3_res1Vo1 = new ArrayList<>();
 		ra_member1U3_res1Vo1.forEach(ra -> attrs_member1U3_res1Vo1.add(ra.getAttribute()));
 
@@ -11271,7 +11295,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by member2OfUser2 and resource1InVo1
 		List<RichAttribute> ra_member2U2_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser2, resource1InVo1, group_fromEmail_atr_def);
+			sess, member2OfUser2, resource1InVo1, group_fromEmail_atr_def);
 		List<Attribute> attrs_member2U2_res1Vo1 = new ArrayList<>();
 		ra_member2U2_res1Vo1.forEach(ra -> attrs_member2U2_res1Vo1.add(ra.getAttribute()));
 
@@ -11286,11 +11310,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find email group attributes by user1 and facility2
 		List<RichAttribute> ra_user1_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility2, group_fromEmail_atr_def);
+			sess, user1, facility2, group_fromEmail_atr_def);
 		List<Attribute> attrs_user1_facility2 = new ArrayList<>();
 		ra_user1_facility2.forEach(ra -> attrs_user1_facility2.add(ra.getAttribute()));
 
@@ -11299,7 +11323,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by user2 and facility3
 		List<RichAttribute> ra_user2_facility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user2, facility3, group_fromEmail_atr_def);
+			sess, user2, facility3, group_fromEmail_atr_def);
 		List<Attribute> attrs_user2_facility3 = new ArrayList<>();
 		ra_user2_facility3.forEach(ra -> attrs_user2_facility3.add(ra.getAttribute()));
 
@@ -11308,7 +11332,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find email group attributes by user1 and facility1
 		List<RichAttribute> ra_user1_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility1, group_fromEmail_atr_def);
+			sess, user1, facility1, group_fromEmail_atr_def);
 		List<Attribute> attrs_user1_facility1 = new ArrayList<>();
 		ra_user1_facility1.forEach(ra -> attrs_user1_facility1.add(ra.getAttribute()));
 
@@ -11327,11 +11351,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find test resource attributes for user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, resource_test_atr_def);
+			sess, user1, resource_test_atr_def);
 		List<Attribute> attrs_user1 = new ArrayList<>();
 		ra_user1.forEach(ra -> attrs_user1.add(ra.getAttribute()));
 
@@ -11348,11 +11372,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find test resource attributes for member1OfUser1
 		List<RichAttribute> ra_member1OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, resource_test_atr_def);
+			sess, member1OfUser1, resource_test_atr_def);
 		List<Attribute> attrs_member1OfUser1 = new ArrayList<>();
 		ra_member1OfUser1.forEach(ra -> attrs_member1OfUser1.add(ra.getAttribute()));
 
@@ -11362,7 +11386,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for member1OfUser3
 		List<RichAttribute> ra_member1OfUser3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser3, resource_test_atr_def);
+			sess, member1OfUser3, resource_test_atr_def);
 		List<Attribute> attrs_member1OfUser3 = new ArrayList<>();
 		ra_member1OfUser3.forEach(ra -> attrs_member1OfUser3.add(ra.getAttribute()));
 
@@ -11378,11 +11402,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find test resource attributes for group2InVo1
 		List<RichAttribute> ra_group2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo1, resource_test_atr_def);
+			sess, group2InVo1, resource_test_atr_def);
 		List<Attribute> attrs_group2InVo1 = new ArrayList<>();
 		ra_group2InVo1.forEach(ra -> attrs_group2InVo1.add(ra.getAttribute()));
 
@@ -11392,7 +11416,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for membersGroupOfVo1
 		List<RichAttribute> ra_membersGroupOfVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, membersGroupOfVo1, resource_test_atr_def);
+			sess, membersGroupOfVo1, resource_test_atr_def);
 		List<Attribute> attrs_membersGroupOfVo1 = new ArrayList<>();
 		ra_membersGroupOfVo1.forEach(ra -> attrs_membersGroupOfVo1.add(ra.getAttribute()));
 
@@ -11407,11 +11431,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find test resource attributes for resource1InVo1
 		List<RichAttribute> ra_resource1InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo1, resource_test_atr_def);
+			sess, resource1InVo1, resource_test_atr_def);
 		List<Attribute> attrs_resource1InVo1 = new ArrayList<>();
 		ra_resource1InVo1.forEach(ra -> attrs_resource1InVo1.add(ra.getAttribute()));
 
@@ -11427,11 +11451,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find test resource attributes for vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, resource_test_atr_def);
+			sess, vo1, resource_test_atr_def);
 		List<Attribute> attrs_vo1 = new ArrayList<>();
 		ra_vo1.forEach(ra -> attrs_vo1.add(ra.getAttribute()));
 
@@ -11441,7 +11465,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for vo2
 		List<RichAttribute> ra_vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, resource_test_atr_def);
+			sess, vo2, resource_test_atr_def);
 		List<Attribute> attrs_vo2 = new ArrayList<>();
 		ra_vo2.forEach(ra -> attrs_vo2.add(ra.getAttribute()));
 
@@ -11458,11 +11482,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find test resource attributes for facility1
 		List<RichAttribute> ra_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility1, resource_test_atr_def);
+			sess, facility1, resource_test_atr_def);
 		List<Attribute> attrs_facility1 = new ArrayList<>();
 		ra_facility1.forEach(ra -> attrs_facility1.add(ra.getAttribute()));
 
@@ -11471,7 +11495,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, resource_test_atr_def);
+			sess, facility2, resource_test_atr_def);
 		List<Attribute> attrs_facility2 = new ArrayList<>();
 		ra_facility2.forEach(ra -> attrs_facility2.add(ra.getAttribute()));
 
@@ -11488,11 +11512,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find test resource attributes for host1OnFacility1
 		List<RichAttribute> ra_host1OnFacility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility1, resource_test_atr_def);
+			sess, host1OnFacility1, resource_test_atr_def);
 		List<Attribute> attrs_host1OnFacility1 = new ArrayList<>();
 		ra_host1OnFacility1.forEach(ra -> attrs_host1OnFacility1.add(ra.getAttribute()));
 
@@ -11501,7 +11525,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for host1OnFacility2
 		List<RichAttribute> ra_host1OnFacility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, resource_test_atr_def);
+			sess, host1OnFacility2, resource_test_atr_def);
 		List<Attribute> attrs_host1OnFacility2 = new ArrayList<>();
 		ra_host1OnFacility2.forEach(ra -> attrs_host1OnFacility2.add(ra.getAttribute()));
 
@@ -11518,11 +11542,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find test resource attributes for userExtSource1
 		List<RichAttribute> ra_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, resource_test_atr_def);
+			sess, userExtSource1, resource_test_atr_def);
 		List<Attribute> attrs_userExtSource1 = new ArrayList<>();
 		ra_userExtSource1.forEach(ra -> attrs_userExtSource1.add(ra.getAttribute()));
 
@@ -11539,11 +11563,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all test resource attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource_test_atr_def);
+			sess, resource_test_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -11562,11 +11586,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
 
 		//find test resource attributes for member2OfUser3 and group2InVo2
 		List<RichAttribute> ra_mem2U3_group2Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser3, group2InVo2, resource_test_atr_def);
+			sess, member2OfUser3, group2InVo2, resource_test_atr_def);
 		List<Attribute> attrs_mem2U3_group2Vo2 = new ArrayList<>();
 		ra_mem2U3_group2Vo2.forEach(ra -> attrs_mem2U3_group2Vo2.add(ra.getAttribute()));
 
@@ -11576,7 +11600,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for member2OfUser1 and group1InVo1
 		List<RichAttribute> ra_mem2U1_group1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, group1InVo1, resource_test_atr_def);
+			sess, member2OfUser1, group1InVo1, resource_test_atr_def);
 		List<Attribute> attrs_mem2U1_group1Vo1 = new ArrayList<>();
 		ra_mem2U1_group1Vo1.forEach(ra -> attrs_mem2U1_group1Vo1.add(ra.getAttribute()));
 
@@ -11584,7 +11608,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for member1OfUser1 and group1InVo1
 		List<RichAttribute> ra_mem1U1_group1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, group1InVo1, resource_test_atr_def);
+			sess, member1OfUser1, group1InVo1, resource_test_atr_def);
 		List<Attribute> attrs_mem1U1_group1Vo1 = new ArrayList<>();
 		ra_mem1U1_group1Vo1.forEach(ra -> attrs_mem1U1_group1Vo1.add(ra.getAttribute()));
 
@@ -11600,11 +11624,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
 
 		//find test resource attributes for member2OfUser3 and resource2InVo2
 		List<RichAttribute> ra_mem2U3_res2Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser3, resource2InVo2, resource_test_atr_def);
+			sess, member2OfUser3, resource2InVo2, resource_test_atr_def);
 		List<Attribute> attrs_mem2U3_res2Vo2 = new ArrayList<>();
 		ra_mem2U3_res2Vo2.forEach(ra -> attrs_mem2U3_res2Vo2.add(ra.getAttribute()));
 
@@ -11613,7 +11637,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for member2OfUser1 and resource1InVo1
 		List<RichAttribute> ra_mem2U1_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, resource1InVo1, resource_test_atr_def);
+			sess, member2OfUser1, resource1InVo1, resource_test_atr_def);
 		List<Attribute> attrs_mem2U1_res1Vo1 = new ArrayList<>();
 		ra_mem2U1_res1Vo1.forEach(ra -> attrs_mem2U1_res1Vo1.add(ra.getAttribute()));
 
@@ -11628,11 +11652,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getResourceAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find test resource attributes for user3 and facility3
 		List<RichAttribute> ra_user3_facility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, facility3, resource_test_atr_def);
+			sess, user3, facility3, resource_test_atr_def);
 		List<Attribute> attrs_user3_facility3 = new ArrayList<>();
 		ra_user3_facility3.forEach(ra -> attrs_user3_facility3.add(ra.getAttribute()));
 
@@ -11641,7 +11665,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for user2 and facility2
 		List<RichAttribute> ra_user2_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user2, facility2, resource_test_atr_def);
+			sess, user2, facility2, resource_test_atr_def);
 		List<Attribute> attrs_user2_facility2 = new ArrayList<>();
 		ra_user2_facility2.forEach(ra -> attrs_user2_facility2.add(ra.getAttribute()));
 
@@ -11659,11 +11683,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find test resource attributes for user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility_test_atr_def);
+			sess, user1, facility_test_atr_def);
 		List<Attribute> attrs_user1 = new ArrayList<>();
 		ra_user1.forEach(ra -> attrs_user1.add(ra.getAttribute()));
 
@@ -11673,7 +11697,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for user3
 		List<RichAttribute> ra_user3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, facility_test_atr_def);
+			sess, user3, facility_test_atr_def);
 		List<Attribute> attrs_user3 = new ArrayList<>();
 		ra_user3.forEach(ra -> attrs_user3.add(ra.getAttribute()));
 
@@ -11691,11 +11715,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find test resource attributes for member1OfUser1
 		List<RichAttribute> ra_member1OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, facility_test_atr_def);
+			sess, member1OfUser1, facility_test_atr_def);
 		List<Attribute> attrs_member1OfUser1 = new ArrayList<>();
 		ra_member1OfUser1.forEach(ra -> attrs_member1OfUser1.add(ra.getAttribute()));
 
@@ -11705,7 +11729,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for member2OfUser2
 		List<RichAttribute> ra_member2OfUser2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser2, facility_test_atr_def);
+			sess, member2OfUser2, facility_test_atr_def);
 		List<Attribute> attrs_member2OfUser2 = new ArrayList<>();
 		ra_member2OfUser2.forEach(ra -> attrs_member2OfUser2.add(ra.getAttribute()));
 
@@ -11720,11 +11744,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find test resource attributes for group2InVo1
 		List<RichAttribute> ra_group2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo1, facility_test_atr_def);
+			sess, group2InVo1, facility_test_atr_def);
 		List<Attribute> attrs_group2InVo1 = new ArrayList<>();
 		ra_group2InVo1.forEach(ra -> attrs_group2InVo1.add(ra.getAttribute()));
 
@@ -11734,7 +11758,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for group1InVo2
 		List<RichAttribute> ra_group1InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo2, facility_test_atr_def);
+			sess, group1InVo2, facility_test_atr_def);
 		List<Attribute> attrs_group1InVo2 = new ArrayList<>();
 		ra_group1InVo2.forEach(ra -> attrs_group1InVo2.add(ra.getAttribute()));
 
@@ -11743,7 +11767,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for membersGroupOfVo1
 		List<RichAttribute> ra_membersGroupOfVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, membersGroupOfVo1, facility_test_atr_def);
+			sess, membersGroupOfVo1, facility_test_atr_def);
 		List<Attribute> attrs_membersGroupOfVo1 = new ArrayList<>();
 		ra_membersGroupOfVo1.forEach(ra -> attrs_membersGroupOfVo1.add(ra.getAttribute()));
 
@@ -11758,11 +11782,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find test resource attributes for resource1InVo1
 		List<RichAttribute> ra_resource1InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo1, facility_test_atr_def);
+			sess, resource1InVo1, facility_test_atr_def);
 		List<Attribute> attrs_resource1InVo1 = new ArrayList<>();
 		ra_resource1InVo1.forEach(ra -> attrs_resource1InVo1.add(ra.getAttribute()));
 
@@ -11771,7 +11795,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for resource2InVo2
 		List<RichAttribute> ra_resource2InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource2InVo2, facility_test_atr_def);
+			sess, resource2InVo2, facility_test_atr_def);
 		List<Attribute> attrs_resource2InVo2 = new ArrayList<>();
 		ra_resource2InVo2.forEach(ra -> attrs_resource2InVo2.add(ra.getAttribute()));
 
@@ -11787,11 +11811,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find test resource attributes for vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, facility_test_atr_def);
+			sess, vo1, facility_test_atr_def);
 		List<Attribute> attrs_vo1 = new ArrayList<>();
 		ra_vo1.forEach(ra -> attrs_vo1.add(ra.getAttribute()));
 
@@ -11801,7 +11825,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for vo2
 		List<RichAttribute> ra_vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, facility_test_atr_def);
+			sess, vo2, facility_test_atr_def);
 		List<Attribute> attrs_vo2 = new ArrayList<>();
 		ra_vo2.forEach(ra -> attrs_vo2.add(ra.getAttribute()));
 
@@ -11818,11 +11842,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find test resource attributes for facility1
 		List<RichAttribute> ra_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility1, facility_test_atr_def);
+			sess, facility1, facility_test_atr_def);
 		List<Attribute> attrs_facility1 = new ArrayList<>();
 		ra_facility1.forEach(ra -> attrs_facility1.add(ra.getAttribute()));
 
@@ -11831,7 +11855,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, facility_test_atr_def);
+			sess, facility2, facility_test_atr_def);
 		List<Attribute> attrs_facility2 = new ArrayList<>();
 		ra_facility2.forEach(ra -> attrs_facility2.add(ra.getAttribute()));
 
@@ -11847,11 +11871,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find test resource attributes for host1OnFacility1
 		List<RichAttribute> ra_host1OnFacility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility1, facility_test_atr_def);
+			sess, host1OnFacility1, facility_test_atr_def);
 		List<Attribute> attrs_host1OnFacility1 = new ArrayList<>();
 		ra_host1OnFacility1.forEach(ra -> attrs_host1OnFacility1.add(ra.getAttribute()));
 
@@ -11860,7 +11884,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for host1OnFacility2
 		List<RichAttribute> ra_host1OnFacility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, facility_test_atr_def);
+			sess, host1OnFacility2, facility_test_atr_def);
 		List<Attribute> attrs_host1OnFacility2 = new ArrayList<>();
 		ra_host1OnFacility2.forEach(ra -> attrs_host1OnFacility2.add(ra.getAttribute()));
 
@@ -11876,11 +11900,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find test resource attributes for userExtSource1
 		List<RichAttribute> ra_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, facility_test_atr_def);
+			sess, userExtSource1, facility_test_atr_def);
 		List<Attribute> attrs_userExtSource1 = new ArrayList<>();
 		ra_userExtSource1.forEach(ra -> attrs_userExtSource1.add(ra.getAttribute()));
 
@@ -11890,7 +11914,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for userExtSource3
 		List<RichAttribute> ra_userExtSource3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource3, facility_test_atr_def);
+			sess, userExtSource3, facility_test_atr_def);
 		List<Attribute> attrs_userExtSource3 = new ArrayList<>();
 		ra_userExtSource3.forEach(ra -> attrs_userExtSource3.add(ra.getAttribute()));
 
@@ -11908,11 +11932,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all test resource attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility_test_atr_def);
+			sess, facility_test_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -11930,11 +11954,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
 
 		//find test resource attributes for member1OfUser1 group2InVo1
 		List<RichAttribute> ra_member1U1_group2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, group2InVo1, facility_test_atr_def);
+			sess, member1OfUser1, group2InVo1, facility_test_atr_def);
 		List<Attribute> attrs_member1U1_group2Vo1 = new ArrayList<>();
 		ra_member1U1_group2Vo1.forEach(ra -> attrs_member1U1_group2Vo1.add(ra.getAttribute()));
 
@@ -11944,7 +11968,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for member1OfUser2 group1InVo2
 		List<RichAttribute> ra_member1U2_group1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser2, group1InVo2, facility_test_atr_def);
+			sess, member1OfUser2, group1InVo2, facility_test_atr_def);
 		List<Attribute> attrs_member1U2_group1Vo2 = new ArrayList<>();
 		ra_member1U2_group1Vo2.forEach(ra -> attrs_member1U2_group1Vo2.add(ra.getAttribute()));
 
@@ -11953,7 +11977,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for member2OfUser1 group1InVo2
 		List<RichAttribute> ra_member2U1_group1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, group1InVo2, facility_test_atr_def);
+			sess, member2OfUser1, group1InVo2, facility_test_atr_def);
 		List<Attribute> attrs_member2U1_group1Vo2 = new ArrayList<>();
 		ra_member2U1_group1Vo2.forEach(ra -> attrs_member2U1_group1Vo2.add(ra.getAttribute()));
 
@@ -11968,11 +11992,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
 
 		//find test resource attributes for member1OfUser1 resource2InVo1
 		List<RichAttribute> ra_member1U1_res2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, resource2InVo1, facility_test_atr_def);
+			sess, member1OfUser1, resource2InVo1, facility_test_atr_def);
 		List<Attribute> attrs_member1U1_res2Vo1 = new ArrayList<>();
 		ra_member1U1_res2Vo1.forEach(ra -> attrs_member1U1_res2Vo1.add(ra.getAttribute()));
 
@@ -11981,7 +12005,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for member1OfUser2 resource2InVo2
 		List<RichAttribute> ra_member1U2_res2Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser2, resource2InVo2, facility_test_atr_def);
+			sess, member1OfUser2, resource2InVo2, facility_test_atr_def);
 		List<Attribute> attrs_member1U2_res2Vo2 = new ArrayList<>();
 		ra_member1U2_res2Vo2.forEach(ra -> attrs_member1U2_res2Vo2.add(ra.getAttribute()));
 
@@ -11990,7 +12014,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for member2OfUser1 resource1InVo2
 		List<RichAttribute> ra_member2U1_res1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, resource1InVo2, facility_test_atr_def);
+			sess, member2OfUser1, resource1InVo2, facility_test_atr_def);
 		List<Attribute> attrs_member2U1_res1Vo2 = new ArrayList<>();
 		ra_member2U1_res1Vo2.forEach(ra -> attrs_member2U1_res1Vo2.add(ra.getAttribute()));
 
@@ -12005,11 +12029,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForFacilityAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getFacilityAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find test resource attributes for user2 facility2
 		List<RichAttribute> ra_user2_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user2, facility2, facility_test_atr_def);
+			sess, user2, facility2, facility_test_atr_def);
 		List<Attribute> attrs_user2_facility2 = new ArrayList<>();
 		ra_user2_facility2.forEach(ra -> attrs_user2_facility2.add(ra.getAttribute()));
 
@@ -12018,7 +12042,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test resource attributes for user2 facility1
 		List<RichAttribute> ra_user2_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user2, facility1, facility_test_atr_def);
+			sess, user2, facility1, facility_test_atr_def);
 		List<Attribute> attrs_user2_facility1 = new ArrayList<>();
 		ra_user2_facility1.forEach(ra -> attrs_user2_facility1.add(ra.getAttribute()));
 
@@ -12035,11 +12059,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find test host attributes for user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, host_test_atr_def);
+			sess, user1, host_test_atr_def);
 		List<Attribute> attrs_user1 = new ArrayList<>();
 		ra_user1.forEach(ra -> attrs_user1.add(ra.getAttribute()));
 
@@ -12051,7 +12075,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for user3
 		List<RichAttribute> ra_user3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, host_test_atr_def);
+			sess, user3, host_test_atr_def);
 		List<Attribute> attrs_user3 = new ArrayList<>();
 		ra_user3.forEach(ra -> attrs_user3.add(ra.getAttribute()));
 
@@ -12072,11 +12096,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find test host attributes for member1OfUser1
 		List<RichAttribute> ra_member1OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, host_test_atr_def);
+			sess, member1OfUser1, host_test_atr_def);
 		List<Attribute> attrs_member1OfUser1 = new ArrayList<>();
 		ra_member1OfUser1.forEach(ra -> attrs_member1OfUser1.add(ra.getAttribute()));
 
@@ -12088,7 +12112,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for member2OfUser2
 		List<RichAttribute> ra_member2OfUser2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser2, host_test_atr_def);
+			sess, member2OfUser2, host_test_atr_def);
 		List<Attribute> attrs_member2OfUser2 = new ArrayList<>();
 		ra_member2OfUser2.forEach(ra -> attrs_member2OfUser2.add(ra.getAttribute()));
 
@@ -12096,7 +12120,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for member2OfUser3
 		List<RichAttribute> ra_member2OfUser3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser3, host_test_atr_def);
+			sess, member2OfUser3, host_test_atr_def);
 		List<Attribute> attrs_member2OfUser3 = new ArrayList<>();
 		ra_member2OfUser3.forEach(ra -> attrs_member2OfUser3.add(ra.getAttribute()));
 
@@ -12115,11 +12139,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find test host attributes for group1InVo2
 		List<RichAttribute> ra_group1InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo2, host_test_atr_def);
+			sess, group1InVo2, host_test_atr_def);
 		List<Attribute> attrs_group1InVo2 = new ArrayList<>();
 		ra_group1InVo2.forEach(ra -> attrs_group1InVo2.add(ra.getAttribute()));
 
@@ -12129,7 +12153,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for group2InVo2
 		List<RichAttribute> ra_group2InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo2, host_test_atr_def);
+			sess, group2InVo2, host_test_atr_def);
 		List<Attribute> attrs_group2InVo2 = new ArrayList<>();
 		ra_group2InVo2.forEach(ra -> attrs_group2InVo2.add(ra.getAttribute()));
 
@@ -12148,11 +12172,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find test host attributes for resource1InVo1
 		List<RichAttribute> ra_resource1InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo1, host_test_atr_def);
+			sess, resource1InVo1, host_test_atr_def);
 		List<Attribute> attrs_resource1InVo1 = new ArrayList<>();
 		ra_resource1InVo1.forEach(ra -> attrs_resource1InVo1.add(ra.getAttribute()));
 
@@ -12162,7 +12186,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for resource2InVo1
 		List<RichAttribute> ra_resource2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource2InVo1, host_test_atr_def);
+			sess, resource2InVo1, host_test_atr_def);
 		List<Attribute> attrs_resource2InVo1 = new ArrayList<>();
 		ra_resource2InVo1.forEach(ra -> attrs_resource2InVo1.add(ra.getAttribute()));
 
@@ -12179,11 +12203,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find test host attributes for vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, host_test_atr_def);
+			sess, vo1, host_test_atr_def);
 		List<Attribute> attrs_vo1 = new ArrayList<>();
 		ra_vo1.forEach(ra -> attrs_vo1.add(ra.getAttribute()));
 
@@ -12195,7 +12219,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for vo2
 		List<RichAttribute> ra_vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, host_test_atr_def);
+			sess, vo2, host_test_atr_def);
 		List<Attribute> attrs_vo2 = new ArrayList<>();
 		ra_vo2.forEach(ra -> attrs_vo2.add(ra.getAttribute()));
 
@@ -12214,11 +12238,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find test host attributes for facility1
 		List<RichAttribute> ra_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility1, host_test_atr_def);
+			sess, facility1, host_test_atr_def);
 		List<Attribute> attrs_facility1 = new ArrayList<>();
 		ra_facility1.forEach(ra -> attrs_facility1.add(ra.getAttribute()));
 
@@ -12228,7 +12252,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, host_test_atr_def);
+			sess, facility2, host_test_atr_def);
 		List<Attribute> attrs_facility2 = new ArrayList<>();
 		ra_facility2.forEach(ra -> attrs_facility2.add(ra.getAttribute()));
 
@@ -12245,11 +12269,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find test host attributes for host1OnFacility1
 		List<RichAttribute> ra_host1OnFacility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility1, host_test_atr_def);
+			sess, host1OnFacility1, host_test_atr_def);
 		List<Attribute> attrs_host1OnFacility1 = new ArrayList<>();
 		ra_host1OnFacility1.forEach(ra -> attrs_host1OnFacility1.add(ra.getAttribute()));
 
@@ -12258,7 +12282,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for host2OnFacility3
 		List<RichAttribute> ra_host2OnFacility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host2OnFacility3, host_test_atr_def);
+			sess, host2OnFacility3, host_test_atr_def);
 		List<Attribute> attrs_host2OnFacility3 = new ArrayList<>();
 		ra_host2OnFacility3.forEach(ra -> attrs_host2OnFacility3.add(ra.getAttribute()));
 
@@ -12274,11 +12298,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find test host attributes for userExtSource1
 		List<RichAttribute> ra_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, host_test_atr_def);
+			sess, userExtSource1, host_test_atr_def);
 		List<Attribute> attrs_userExtSource1 = new ArrayList<>();
 		ra_userExtSource1.forEach(ra -> attrs_userExtSource1.add(ra.getAttribute()));
 
@@ -12290,7 +12314,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for userExtSource3
 		List<RichAttribute> ra_userExtSource3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource3, host_test_atr_def);
+			sess, userExtSource3, host_test_atr_def);
 		List<Attribute> attrs_userExtSource3 = new ArrayList<>();
 		ra_userExtSource3.forEach(ra -> attrs_userExtSource3.add(ra.getAttribute()));
 
@@ -12311,11 +12335,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all test host attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host_test_atr_def);
+			sess, host_test_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -12336,11 +12360,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
 
 		//find test host attributes for member1OfUser2 and group1InVo2
 		List<RichAttribute> ra_member1U2_group1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser2, group1InVo2, host_test_atr_def);
+			sess, member1OfUser2, group1InVo2, host_test_atr_def);
 		List<Attribute> attrs_member1U2_group1Vo2 = new ArrayList<>();
 		ra_member1U2_group1Vo2.forEach(ra -> attrs_member1U2_group1Vo2.add(ra.getAttribute()));
 
@@ -12350,7 +12374,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for member2OfUser3 and group2InVo2
 		List<RichAttribute> ra_member2U3_group2Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess,  member2OfUser3, group2InVo2, host_test_atr_def);
+			sess,  member2OfUser3, group2InVo2, host_test_atr_def);
 		List<Attribute> attrs_member2U3_group2Vo2 = new ArrayList<>();
 		ra_member2U3_group2Vo2.forEach(ra -> attrs_member2U3_group2Vo2.add(ra.getAttribute()));
 
@@ -12362,7 +12386,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for member2OfUser1 and group2InVo2
 		List<RichAttribute> ra_member2U1_group2Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess,  member2OfUser1, group2InVo2, host_test_atr_def);
+			sess,  member2OfUser1, group2InVo2, host_test_atr_def);
 		List<Attribute> attrs_member2U1_group2Vo2 = new ArrayList<>();
 		ra_member2U1_group2Vo2.forEach(ra -> attrs_member2U1_group2Vo2.add(ra.getAttribute()));
 
@@ -12377,11 +12401,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForHostAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getHostAttributes",
-				PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
 
 		//find test host attributes for member1OfUser1 and resource1InVo1
 		List<RichAttribute> ra_mem1U1_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, resource1InVo1, host_test_atr_def);
+			sess, member1OfUser1, resource1InVo1, host_test_atr_def);
 		List<Attribute> attrs_mem1U1_res1Vo1 = new ArrayList<>();
 		ra_mem1U1_res1Vo1.forEach(ra -> attrs_mem1U1_res1Vo1.add(ra.getAttribute()));
 
@@ -12391,7 +12415,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test host attributes for member2OfUser2 and resource2InVo1
 		List<RichAttribute> ra_mem2U2_res2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser2, resource2InVo1, host_test_atr_def);
+			sess, member2OfUser2, resource2InVo1, host_test_atr_def);
 		List<Attribute> attrs_mem2U2_res2Vo1 = new ArrayList<>();
 		ra_mem2U2_res2Vo1.forEach(ra -> attrs_mem2U2_res2Vo1.add(ra.getAttribute()));
 
@@ -12409,11 +12433,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find test UES attributes for user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, ues_test_atr_def);
+			sess, user1, ues_test_atr_def);
 		List<Attribute> attrs_user1 = new ArrayList<>();
 		ra_user1.forEach(ra -> attrs_user1.add(ra.getAttribute()));
 
@@ -12423,7 +12447,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test UES attributes for user3
 		List<RichAttribute> ra_user3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, ues_test_atr_def);
+			sess, user3, ues_test_atr_def);
 		List<Attribute> attrs_user3 = new ArrayList<>();
 		ra_user3.forEach(ra -> attrs_user3.add(ra.getAttribute()));
 
@@ -12441,11 +12465,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find test UES attributes for member1OfUser1
 		List<RichAttribute> ra_member1OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, ues_test_atr_def);
+			sess, member1OfUser1, ues_test_atr_def);
 		List<Attribute> attrs_member1OfUser1 = new ArrayList<>();
 		ra_member1OfUser1.forEach(ra -> attrs_member1OfUser1.add(ra.getAttribute()));
 
@@ -12455,7 +12479,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test UES attributes for member2OfUser1
 		List<RichAttribute> ra_member2OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, ues_test_atr_def);
+			sess, member2OfUser1, ues_test_atr_def);
 		List<Attribute> attrs_member2OfUser1 = new ArrayList<>();
 		ra_member2OfUser1.forEach(ra -> attrs_member2OfUser1.add(ra.getAttribute()));
 
@@ -12471,11 +12495,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find test UES attributes for group1InVo1
 		List<RichAttribute> ra_group1InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo1, ues_test_atr_def);
+			sess, group1InVo1, ues_test_atr_def);
 		List<Attribute> attrs_group1InVo1 = new ArrayList<>();
 		ra_group1InVo1.forEach(ra -> attrs_group1InVo1.add(ra.getAttribute()));
 
@@ -12487,7 +12511,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test UES attributes for group2InVo1
 		List<RichAttribute> ra_group2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo1, ues_test_atr_def);
+			sess, group2InVo1, ues_test_atr_def);
 		List<Attribute> attrs_group2InVo1 = new ArrayList<>();
 		ra_group2InVo1.forEach(ra -> attrs_group2InVo1.add(ra.getAttribute()));
 
@@ -12505,11 +12529,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find test UES attributes for resource1InVo2
 		List<RichAttribute> ra_resource1InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo2, ues_test_atr_def);
+			sess, resource1InVo2, ues_test_atr_def);
 		List<Attribute> attrs_resource1InVo2 = new ArrayList<>();
 		ra_resource1InVo2.forEach(ra -> attrs_resource1InVo2.add(ra.getAttribute()));
 
@@ -12521,7 +12545,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test UES attributes for resource2InVo1
 		List<RichAttribute> ra_resource2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource2InVo1, ues_test_atr_def);
+			sess, resource2InVo1, ues_test_atr_def);
 		List<Attribute> attrs_resource2InVo1 = new ArrayList<>();
 		ra_resource2InVo1.forEach(ra -> attrs_resource2InVo1.add(ra.getAttribute()));
 
@@ -12539,11 +12563,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find test UES attributes for vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, ues_test_atr_def);
+			sess, vo1, ues_test_atr_def);
 		List<Attribute> attrs_vo1 = new ArrayList<>();
 		ra_vo1.forEach(ra -> attrs_vo1.add(ra.getAttribute()));
 
@@ -12555,7 +12579,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test UES attributes for vo2
 		List<RichAttribute> ra_vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, ues_test_atr_def);
+			sess, vo2, ues_test_atr_def);
 		List<Attribute> attrs_vo2 = new ArrayList<>();
 		ra_vo2.forEach(ra -> attrs_vo2.add(ra.getAttribute()));
 
@@ -12574,11 +12598,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find test UES attributes for facility1
 		List<RichAttribute> ra_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility1, ues_test_atr_def);
+			sess, facility1, ues_test_atr_def);
 		List<Attribute> attrs_facility1 = new ArrayList<>();
 		ra_facility1.forEach(ra -> attrs_facility1.add(ra.getAttribute()));
 
@@ -12590,7 +12614,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test UES attributes for facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, ues_test_atr_def);
+			sess, facility2, ues_test_atr_def);
 		List<Attribute> attrs_facility2 = new ArrayList<>();
 		ra_facility2.forEach(ra -> attrs_facility2.add(ra.getAttribute()));
 
@@ -12611,11 +12635,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find test UES attributes for host1OnFacility1
 		List<RichAttribute> ra_host1OnFacility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility1, ues_test_atr_def);
+			sess, host1OnFacility1, ues_test_atr_def);
 		List<Attribute> attrs_host1OnFacility1 = new ArrayList<>();
 		ra_host1OnFacility1.forEach(ra -> attrs_host1OnFacility1.add(ra.getAttribute()));
 
@@ -12627,7 +12651,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test UES attributes for host1OnFacility2
 		List<RichAttribute> ra_host1OnFacility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, ues_test_atr_def);
+			sess, host1OnFacility2, ues_test_atr_def);
 		List<Attribute> attrs_host1OnFacility2 = new ArrayList<>();
 		ra_host1OnFacility2.forEach(ra -> attrs_host1OnFacility2.add(ra.getAttribute()));
 
@@ -12648,11 +12672,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find test UES attributes for userExtSource1
 		List<RichAttribute> ra_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, ues_test_atr_def);
+			sess, userExtSource1, ues_test_atr_def);
 		List<Attribute> attrs_userExtSource1 = new ArrayList<>();
 		ra_userExtSource1.forEach(ra -> attrs_userExtSource1.add(ra.getAttribute()));
 
@@ -12669,11 +12693,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all test UES attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, ues_test_atr_def);
+			sess, ues_test_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -12694,11 +12718,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUESAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserExtSourceAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find test UES attributes for user1 facility1
 		List<RichAttribute> ra_user1_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility1, ues_test_atr_def);
+			sess, user1, facility1, ues_test_atr_def);
 		List<Attribute> attrs_user1_facility1 = new ArrayList<>();
 		ra_user1_facility1.forEach(ra -> attrs_user1_facility1.add(ra.getAttribute()));
 
@@ -12708,7 +12732,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test UES attributes for user1 and facility3
 		List<RichAttribute> ra_user1_facility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility3, ues_test_atr_def);
+			sess, user1, facility3, ues_test_atr_def);
 		List<Attribute> attrs_user1_facility3 = new ArrayList<>();
 		ra_user1_facility3.forEach(ra -> attrs_user1_facility3.add(ra.getAttribute()));
 
@@ -12725,11 +12749,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, groupResource_test_atr_def);
+			sess, user1, groupResource_test_atr_def);
 		List<Attribute> attrs_user1 = new ArrayList<>();
 		ra_user1.forEach(ra -> attrs_user1.add(ra.getAttribute()));
 
@@ -12740,7 +12764,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for user3
 		List<RichAttribute> ra_user3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, groupResource_test_atr_def);
+			sess, user3, groupResource_test_atr_def);
 		List<Attribute> attrs_user3 = new ArrayList<>();
 		ra_user3.forEach(ra -> attrs_user3.add(ra.getAttribute()));
 
@@ -12758,11 +12782,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for member2OfUser3
 		List<RichAttribute> ra_member2OfUser3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser3, groupResource_test_atr_def);
+			sess, member2OfUser3, groupResource_test_atr_def);
 		List<Attribute> attrs_member2OfUser3 = new ArrayList<>();
 		ra_member2OfUser3.forEach(ra -> attrs_member2OfUser3.add(ra.getAttribute()));
 
@@ -12772,7 +12796,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for member1OfUser2
 		List<RichAttribute> ra_member1OfUser2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser2, groupResource_test_atr_def);
+			sess, member1OfUser2, groupResource_test_atr_def);
 		List<Attribute> attrs_member1OfUser2 = new ArrayList<>();
 		ra_member1OfUser2.forEach(ra -> attrs_member1OfUser2.add(ra.getAttribute()));
 
@@ -12783,7 +12807,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for member2OfUser1
 		List<RichAttribute> ra_member2OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, groupResource_test_atr_def);
+			sess, member2OfUser1, groupResource_test_atr_def);
 		List<Attribute> attrs_member2OfUser1 = new ArrayList<>();
 		ra_member2OfUser1.forEach(ra -> attrs_member2OfUser1.add(ra.getAttribute()));
 
@@ -12798,11 +12822,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for group2InVo1
 		List<RichAttribute> ra_group2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo1, groupResource_test_atr_def);
+			sess, group2InVo1, groupResource_test_atr_def);
 		List<Attribute> attrs_group2InVo1 = new ArrayList<>();
 		ra_group2InVo1.forEach(ra -> attrs_group2InVo1.add(ra.getAttribute()));
 
@@ -12812,7 +12836,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for group1InVo2
 		List<RichAttribute> ra_group1InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo2, groupResource_test_atr_def);
+			sess, group1InVo2, groupResource_test_atr_def);
 		List<Attribute> attrs_group1InVo2 = new ArrayList<>();
 		ra_group1InVo2.forEach(ra -> attrs_group1InVo2.add(ra.getAttribute()));
 
@@ -12821,7 +12845,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for membersGroupOfVo1
 		List<RichAttribute> ra_membersGroupOfVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, membersGroupOfVo1, groupResource_test_atr_def);
+			sess, membersGroupOfVo1, groupResource_test_atr_def);
 		List<Attribute> attrs_membersGroupOfVo1 = new ArrayList<>();
 		ra_membersGroupOfVo1.forEach(ra -> attrs_membersGroupOfVo1.add(ra.getAttribute()));
 
@@ -12836,11 +12860,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for resource1InVo1
 		List<RichAttribute> ra_resource1InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo1, groupResource_test_atr_def);
+			sess, resource1InVo1, groupResource_test_atr_def);
 		List<Attribute> attrs_resource1InVo1 = new ArrayList<>();
 		ra_resource1InVo1.forEach(ra -> attrs_resource1InVo1.add(ra.getAttribute()));
 
@@ -12850,7 +12874,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for resource2InVo2
 		List<RichAttribute> ra_resource2InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource2InVo2, groupResource_test_atr_def);
+			sess, resource2InVo2, groupResource_test_atr_def);
 		List<Attribute> attrs_resource2InVo2 = new ArrayList<>();
 		ra_resource2InVo2.forEach(ra -> attrs_resource2InVo2.add(ra.getAttribute()));
 
@@ -12866,11 +12890,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, groupResource_test_atr_def);
+			sess, vo1, groupResource_test_atr_def);
 		List<Attribute> attrs_vo1 = new ArrayList<>();
 		ra_vo1.forEach(ra -> attrs_vo1.add(ra.getAttribute()));
 
@@ -12881,7 +12905,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for vo2
 		List<RichAttribute> ra_vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, groupResource_test_atr_def);
+			sess, vo2, groupResource_test_atr_def);
 		List<Attribute> attrs_vo2 = new ArrayList<>();
 		ra_vo2.forEach(ra -> attrs_vo2.add(ra.getAttribute()));
 
@@ -12899,11 +12923,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, groupResource_test_atr_def);
+			sess, facility2, groupResource_test_atr_def);
 		List<Attribute> attrs_facility2 = new ArrayList<>();
 		ra_facility2.forEach(ra -> attrs_facility2.add(ra.getAttribute()));
 
@@ -12914,7 +12938,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for facility1
 		List<RichAttribute> ra_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility1, groupResource_test_atr_def);
+			sess, facility1, groupResource_test_atr_def);
 		List<Attribute> attrs_facility1 = new ArrayList<>();
 		ra_facility1.forEach(ra -> attrs_facility1.add(ra.getAttribute()));
 
@@ -12931,11 +12955,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for host1OnFacility2
 		List<RichAttribute> ra_host1OnFacility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, groupResource_test_atr_def);
+			sess, host1OnFacility2, groupResource_test_atr_def);
 		List<Attribute> attrs_host1OnFacility2 = new ArrayList<>();
 		ra_host1OnFacility2.forEach(ra -> attrs_host1OnFacility2.add(ra.getAttribute()));
 
@@ -12946,7 +12970,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for host1OnFacility1
 		List<RichAttribute> ra_host1OnFacility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility1, groupResource_test_atr_def);
+			sess, host1OnFacility1, groupResource_test_atr_def);
 		List<Attribute> attrs_host1OnFacility1 = new ArrayList<>();
 		ra_host1OnFacility1.forEach(ra -> attrs_host1OnFacility1.add(ra.getAttribute()));
 
@@ -12963,11 +12987,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for userExtSource1
 		List<RichAttribute> ra_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, groupResource_test_atr_def);
+			sess, userExtSource1, groupResource_test_atr_def);
 		List<Attribute> attrs_userExtSource1 = new ArrayList<>();
 		ra_userExtSource1.forEach(ra -> attrs_userExtSource1.add(ra.getAttribute()));
 
@@ -12978,7 +13002,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for userExtSource3
 		List<RichAttribute> ra_userExtSource3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource3, groupResource_test_atr_def);
+			sess, userExtSource3, groupResource_test_atr_def);
 		List<Attribute> attrs_userExtSource3 = new ArrayList<>();
 		ra_userExtSource3.forEach(ra -> attrs_userExtSource3.add(ra.getAttribute()));
 
@@ -12996,11 +13020,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, Group.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, Resource.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for group1InVo1 and resource1InVo1
 		List<RichAttribute> ra_group1Vo1_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo1, resource1InVo1, groupResource_test_atr_def);
+			sess, group1InVo1, resource1InVo1, groupResource_test_atr_def);
 		List<Attribute> attrs_group1Vo1_res1Vo1 = new ArrayList<>();
 		ra_group1Vo1_res1Vo1.forEach(ra -> attrs_group1Vo1_res1Vo1.add(ra.getAttribute()));
 
@@ -13016,11 +13040,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for member1OfUser1 and group2InVo1
 		List<RichAttribute> ra_member1U1_group2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, group2InVo1, groupResource_test_atr_def);
+			sess, member1OfUser1, group2InVo1, groupResource_test_atr_def);
 		List<Attribute> attrs_member1U1_group2Vo1 = new ArrayList<>();
 		ra_member1U1_group2Vo1.forEach(ra -> attrs_member1U1_group2Vo1.add(ra.getAttribute()));
 
@@ -13030,7 +13054,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for member2OfUser1 group1InVo2
 		List<RichAttribute> ra_member2U1_group2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, group1InVo2, groupResource_test_atr_def);
+			sess, member2OfUser1, group1InVo2, groupResource_test_atr_def);
 		List<Attribute> attrs_member2U1_group2Vo1 = new ArrayList<>();
 		ra_member2U1_group2Vo1.forEach(ra -> attrs_member2U1_group2Vo1.add(ra.getAttribute()));
 
@@ -13045,11 +13069,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for member1OfUser1 and resource1InVo1
 		List<RichAttribute> ra_member1U1_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, resource1InVo1, groupResource_test_atr_def);
+			sess, member1OfUser1, resource1InVo1, groupResource_test_atr_def);
 		List<Attribute> attrs_member1U1_res1Vo1 = new ArrayList<>();
 		ra_member1U1_res1Vo1.forEach(ra -> attrs_member1U1_res1Vo1.add(ra.getAttribute()));
 
@@ -13059,7 +13083,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for member2OfUser1 and resource1InVo2
 		List<RichAttribute> ra_member2U1_res1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, resource1InVo2, groupResource_test_atr_def);
+			sess, member2OfUser1, resource1InVo2, groupResource_test_atr_def);
 		List<Attribute> attrs_member2U1_res1Vo2 = new ArrayList<>();
 		ra_member2U1_res1Vo2.forEach(ra -> attrs_member2U1_res1Vo2.add(ra.getAttribute()));
 
@@ -13074,11 +13098,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find test group-resource attributes for user1 and facility2
 		List<RichAttribute> ra_user1_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility2, groupResource_test_atr_def);
+			sess, user1, facility2, groupResource_test_atr_def);
 		List<Attribute> attrs_user1_facility2 = new ArrayList<>();
 		ra_user1_facility2.forEach(ra -> attrs_user1_facility2.add(ra.getAttribute()));
 
@@ -13087,7 +13111,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for user3 and facility1
 		List<RichAttribute> ra_user3_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, facility1, groupResource_test_atr_def);
+			sess, user3, facility1, groupResource_test_atr_def);
 		List<Attribute> attrs_user3_facility1 = new ArrayList<>();
 		ra_user3_facility1.forEach(ra -> attrs_user3_facility1.add(ra.getAttribute()));
 
@@ -13096,7 +13120,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find test group-resource attributes for user3 and facility2
 		List<RichAttribute> ra_user3_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, facility2, groupResource_test_atr_def);
+			sess, user3, facility2, groupResource_test_atr_def);
 		List<Attribute> attrs_user3_facility2 = new ArrayList<>();
 		ra_user3_facility2.forEach(ra -> attrs_user3_facility2.add(ra.getAttribute()));
 
@@ -13112,11 +13136,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForGroupResourceAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getGroupResourceAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all test group-resource attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, groupResource_test_atr_def);
+			sess, groupResource_test_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -13139,11 +13163,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find all test member-group attributes user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, memberGroup_test_atr_def);
+			sess, user1, memberGroup_test_atr_def);
 		List<Attribute> attrs_user1 = new ArrayList<>();
 
 		//remove empty attributes which are not tested
@@ -13157,7 +13181,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes user3
 		List<RichAttribute> ra_user3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, memberGroup_test_atr_def);
+			sess, user3, memberGroup_test_atr_def);
 		List<Attribute> attrs_user3 = new ArrayList<>();
 
 		//remove empty attributes which are not tested
@@ -13178,11 +13202,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for member1OfUser1
 		List<RichAttribute> ra_member1OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, memberGroup_test_atr_def);
+			sess, member1OfUser1, memberGroup_test_atr_def);
 		List<Attribute> attrs_member1OfUser1 = new ArrayList<>();
 
 		//remove empty attributes which are not tested
@@ -13196,7 +13220,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for member2OfUser1
 		List<RichAttribute> ra_member2OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, memberGroup_test_atr_def);
+			sess, member2OfUser1, memberGroup_test_atr_def);
 		List<Attribute> attrs_member2OfUser1 = new ArrayList<>();
 
 		//remove empty attributes which are not tested
@@ -13215,11 +13239,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for group2InVo2
 		List<RichAttribute> ra_group2InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo2, memberGroup_test_atr_def);
+			sess, group2InVo2, memberGroup_test_atr_def);
 		List<Attribute> attrs_group2InVo2 = new ArrayList<>();
 		ra_group2InVo2.forEach(ra -> attrs_group2InVo2.add(ra.getAttribute()));
 
@@ -13229,7 +13253,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for group2InVo1
 		List<RichAttribute> ra_group2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo1, memberGroup_test_atr_def);
+			sess, group2InVo1, memberGroup_test_atr_def);
 		List<Attribute> attrs_group2InVo1 = new ArrayList<>();
 		ra_group2InVo1.forEach(ra -> attrs_group2InVo1.add(ra.getAttribute()));
 
@@ -13245,11 +13269,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for resource1InVo2
 		List<RichAttribute> ra_resource1InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo2, memberGroup_test_atr_def);
+			sess, resource1InVo2, memberGroup_test_atr_def);
 		List<Attribute> attrs_resource1InVo2 = new ArrayList<>();
 		ra_resource1InVo2.forEach(ra -> attrs_resource1InVo2.add(ra.getAttribute()));
 
@@ -13260,7 +13284,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for resource1InVo1
 		List<RichAttribute> ra_resource1InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo1, memberGroup_test_atr_def);
+			sess, resource1InVo1, memberGroup_test_atr_def);
 		List<Attribute> attrs_resource1InVo1 = new ArrayList<>();
 		ra_resource1InVo1.forEach(ra -> attrs_resource1InVo1.add(ra.getAttribute()));
 
@@ -13278,11 +13302,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, memberGroup_test_atr_def);
+			sess, vo1, memberGroup_test_atr_def);
 		List<Attribute> attrs_vo1 = new ArrayList<>();
 
 		//remove empty attributes which are not used in test
@@ -13297,7 +13321,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for vo2
 		List<RichAttribute> ra_vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, memberGroup_test_atr_def);
+			sess, vo2, memberGroup_test_atr_def);
 		List<Attribute> attrs_vo2 = new ArrayList<>();
 
 		//remove empty attributes which are not used in test
@@ -13319,11 +13343,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, memberGroup_test_atr_def);
+			sess, facility2, memberGroup_test_atr_def);
 		List<Attribute> attrs_facility2 = new ArrayList<>();
 		ra_facility2.forEach(ra -> attrs_facility2.add(ra.getAttribute()));
 
@@ -13335,7 +13359,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for facility3
 		List<RichAttribute> ra_facility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility3, memberGroup_test_atr_def);
+			sess, facility3, memberGroup_test_atr_def);
 		List<Attribute> attrs_facility3 = new ArrayList<>();
 		ra_facility3.forEach(ra -> attrs_facility3.add(ra.getAttribute()));
 
@@ -13352,11 +13376,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for host1OnFacility2
 		List<RichAttribute> ra_host1OnFacility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, memberGroup_test_atr_def);
+			sess, host1OnFacility2, memberGroup_test_atr_def);
 		List<Attribute> attrs_host1OnFacility2 = new ArrayList<>();
 		ra_host1OnFacility2.forEach(ra -> attrs_host1OnFacility2.add(ra.getAttribute()));
 
@@ -13368,7 +13392,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for host2OnFacility3
 		List<RichAttribute> ra_host2OnFacility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host2OnFacility3, memberGroup_test_atr_def);
+			sess, host2OnFacility3, memberGroup_test_atr_def);
 		List<Attribute> attrs_host2OnFacility3 = new ArrayList<>();
 		ra_host2OnFacility3.forEach(ra -> attrs_host2OnFacility3.add(ra.getAttribute()));
 
@@ -13385,11 +13409,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find all test member-group attributes userExtSource1
 		List<RichAttribute> ra_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, memberGroup_test_atr_def);
+			sess, userExtSource1, memberGroup_test_atr_def);
 		List<Attribute> attrs_userExtSource1 = new ArrayList<>();
 
 		//remove empty attributes which are not tested
@@ -13403,7 +13427,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes userExtSource3
 		List<RichAttribute> ra_userExtSource3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource3, memberGroup_test_atr_def);
+			sess, userExtSource3, memberGroup_test_atr_def);
 		List<Attribute> attrs_userExtSource3 = new ArrayList<>();
 
 		//remove empty attributes which are not tested
@@ -13424,11 +13448,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
 
 		//find all test member-group attributesmember1OfUser1 and group1InVo1
 		List<RichAttribute> ra_member1U1_group1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, group1InVo1, memberGroup_test_atr_def);
+			sess, member1OfUser1, group1InVo1, memberGroup_test_atr_def);
 		List<Attribute> attrs_member1U1_group1Vo1 = new ArrayList<>();
 		ra_member1U1_group1Vo1.forEach(ra -> attrs_member1U1_group1Vo1.add(ra.getAttribute()));
 
@@ -13437,7 +13461,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes member2OfUser1 and group1InVo2
 		List<RichAttribute> ra_member2U1_group1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, group1InVo2, memberGroup_test_atr_def);
+			sess, member2OfUser1, group1InVo2, memberGroup_test_atr_def);
 		List<Attribute> attrs_member2U1_group1Vo2 = new ArrayList<>();
 		ra_member2U1_group1Vo2.forEach(ra -> attrs_member2U1_group1Vo2.add(ra.getAttribute()));
 
@@ -13452,11 +13476,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
 
 		//find all test member-group attributes member1OfUser1 and resource2InVo1
 		List<RichAttribute> ra_member1U1_res2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, resource2InVo1, memberGroup_test_atr_def);
+			sess, member1OfUser1, resource2InVo1, memberGroup_test_atr_def);
 		List<Attribute> attrs_member1U1_res2Vo1 = new ArrayList<>();
 		ra_member1U1_res2Vo1.forEach(ra -> attrs_member1U1_res2Vo1.add(ra.getAttribute()));
 
@@ -13465,7 +13489,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes member1OfUser1 and resource1InVo1
 		List<RichAttribute> ra_member1U1_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, resource1InVo1, memberGroup_test_atr_def);
+			sess, member1OfUser1, resource1InVo1, memberGroup_test_atr_def);
 		List<Attribute> attrs_member1U1_res1Vo1 = new ArrayList<>();
 		ra_member1U1_res1Vo1.forEach(ra -> attrs_member1U1_res1Vo1.add(ra.getAttribute()));
 
@@ -13475,7 +13499,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes member2OfUser2 and resource2InVo1
 		List<RichAttribute> ra_member2U2_res2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser2, resource2InVo1, memberGroup_test_atr_def);
+			sess, member2OfUser2, resource2InVo1, memberGroup_test_atr_def);
 		List<Attribute> attrs_member2U2_res2Vo1 = new ArrayList<>();
 		ra_member2U2_res2Vo1.forEach(ra -> attrs_member2U2_res2Vo1.add(ra.getAttribute()));
 
@@ -13490,11 +13514,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for user3 and facility2
 		List<RichAttribute> ra_user3_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, facility2, memberGroup_test_atr_def);
+			sess, user3, facility2, memberGroup_test_atr_def);
 		List<Attribute> attrs_user3_facility2 = new ArrayList<>();
 
 		//remove attributes which are not used in test
@@ -13508,7 +13532,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for user1 and facility2
 		List<RichAttribute> ra_user1_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility2, memberGroup_test_atr_def);
+			sess, user1, facility2, memberGroup_test_atr_def);
 		List<Attribute> attrs_user1_facility2 = new ArrayList<>();
 
 		//remove attributes which are not used in test
@@ -13528,11 +13552,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberGroupAttributesTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberGroupAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all test member-group attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, memberGroup_test_atr_def);
+			sess, memberGroup_test_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 
 		//remove attributes which are not used in test
@@ -13560,11 +13584,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find all test member-group attributes user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, memberResource_test_atr_def);
+			sess, user1, memberResource_test_atr_def);
 		List<Attribute> attrs_user1 = new ArrayList<>();
 		ra_user1.forEach(ra -> attrs_user1.add(ra.getAttribute()));
 
@@ -13574,7 +13598,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes user3
 		List<RichAttribute> ra_user3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, memberResource_test_atr_def);
+			sess, user3, memberResource_test_atr_def);
 		List<Attribute> attrs_user3 = new ArrayList<>();
 		ra_user3.forEach(ra -> attrs_user3.add(ra.getAttribute()));
 
@@ -13592,11 +13616,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for member2OfUser3
 		List<RichAttribute> ra_member2OfUser3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser3, memberResource_test_atr_def);
+			sess, member2OfUser3, memberResource_test_atr_def);
 		List<Attribute> attrs_member2OfUser3 = new ArrayList<>();
 		ra_member2OfUser3.forEach(ra -> attrs_member2OfUser3.add(ra.getAttribute()));
 
@@ -13606,7 +13630,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for member2OfUser3
 		List<RichAttribute> ra_member2OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, memberResource_test_atr_def);
+			sess, member2OfUser1, memberResource_test_atr_def);
 		List<Attribute> attrs_member2OfUser1 = new ArrayList<>();
 		ra_member2OfUser1.forEach(ra -> attrs_member2OfUser1.add(ra.getAttribute()));
 
@@ -13621,11 +13645,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for group2InVo2
 		List<RichAttribute> ra_group2InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo2, memberResource_test_atr_def);
+			sess, group2InVo2, memberResource_test_atr_def);
 		List<Attribute> attrs_group2InVo2 = new ArrayList<>();
 		ra_group2InVo2.forEach(ra -> attrs_group2InVo2.add(ra.getAttribute()));
 
@@ -13637,7 +13661,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for group2InVo1
 		List<RichAttribute> ra_group2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo1, memberResource_test_atr_def);
+			sess, group2InVo1, memberResource_test_atr_def);
 		List<Attribute> attrs_group2InVo1 = new ArrayList<>();
 		ra_group2InVo1.forEach(ra -> attrs_group2InVo1.add(ra.getAttribute()));
 
@@ -13654,11 +13678,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for resource2InVo1
 		List<RichAttribute> ra_resource2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource2InVo1, memberResource_test_atr_def);
+			sess, resource2InVo1, memberResource_test_atr_def);
 		List<Attribute> attrs_resource2InVo1 = new ArrayList<>();
 		ra_resource2InVo1.forEach(ra -> attrs_resource2InVo1.add(ra.getAttribute()));
 
@@ -13667,7 +13691,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for resource1InVo2
 		List<RichAttribute> ra_resource1InVo21 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo2, memberResource_test_atr_def);
+			sess, resource1InVo2, memberResource_test_atr_def);
 		List<Attribute> attrs_resource1InVo2 = new ArrayList<>();
 		ra_resource1InVo21.forEach(ra -> attrs_resource1InVo2.add(ra.getAttribute()));
 
@@ -13684,11 +13708,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, memberResource_test_atr_def);
+			sess, vo1, memberResource_test_atr_def);
 		List<Attribute> attrs_vo1 = new ArrayList<>();
 		ra_vo1.forEach(ra -> attrs_vo1.add(ra.getAttribute()));
 
@@ -13699,7 +13723,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for vo2
 		List<RichAttribute> ra_vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, memberResource_test_atr_def);
+			sess, vo2, memberResource_test_atr_def);
 		List<Attribute> attrs_vo2 = new ArrayList<>();
 		ra_vo2.forEach(ra -> attrs_vo2.add(ra.getAttribute()));
 
@@ -13718,11 +13742,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for facility1
 		List<RichAttribute> ra_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility1, memberResource_test_atr_def);
+			sess, facility1, memberResource_test_atr_def);
 		List<Attribute> attrs_facility1 = new ArrayList<>();
 		ra_facility1.forEach(ra -> attrs_facility1.add(ra.getAttribute()));
 
@@ -13732,7 +13756,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, memberResource_test_atr_def);
+			sess, facility2, memberResource_test_atr_def);
 		List<Attribute> attrs_facility2 = new ArrayList<>();
 		ra_facility2.forEach(ra -> attrs_facility2.add(ra.getAttribute()));
 
@@ -13743,7 +13767,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for facility3
 		List<RichAttribute> ra_facility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility3, memberResource_test_atr_def);
+			sess, facility3, memberResource_test_atr_def);
 		List<Attribute> attrs_facility3 = new ArrayList<>();
 		ra_facility3.forEach(ra -> attrs_facility3.add(ra.getAttribute()));
 
@@ -13760,11 +13784,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find all test member-group attributes for host1OnFacility1
 		List<RichAttribute> ra_host1OnFacility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility1, memberResource_test_atr_def);
+			sess, host1OnFacility1, memberResource_test_atr_def);
 		List<Attribute> attrs_host1OnFacility1 = new ArrayList<>();
 		ra_host1OnFacility1.forEach(ra -> attrs_host1OnFacility1.add(ra.getAttribute()));
 
@@ -13774,7 +13798,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for host1OnFacility2
 		List<RichAttribute> ra_host1OnFacility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, memberResource_test_atr_def);
+			sess, host1OnFacility2, memberResource_test_atr_def);
 		List<Attribute> attrs_host1OnFacility2 = new ArrayList<>();
 		ra_host1OnFacility2.forEach(ra -> attrs_host1OnFacility2.add(ra.getAttribute()));
 
@@ -13785,7 +13809,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes for host2OnFacility3
 		List<RichAttribute> ra_host2OnFacility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host2OnFacility3, memberResource_test_atr_def);
+			sess, host2OnFacility3, memberResource_test_atr_def);
 		List<Attribute> attrs_host2OnFacility3 = new ArrayList<>();
 		ra_host2OnFacility3.forEach(ra -> attrs_host2OnFacility3.add(ra.getAttribute()));
 
@@ -13802,11 +13826,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find all test member-group attributes userExtSource1
 		List<RichAttribute> ra_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, memberResource_test_atr_def);
+			sess, userExtSource1, memberResource_test_atr_def);
 		List<Attribute> attrs_userExtSource1 = new ArrayList<>();
 		ra_userExtSource1.forEach(ra -> attrs_userExtSource1.add(ra.getAttribute()));
 
@@ -13816,7 +13840,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes userExtSource3
 		List<RichAttribute> ra_userExtSource3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource3, memberResource_test_atr_def);
+			sess, userExtSource3, memberResource_test_atr_def);
 		List<Attribute> attrs_userExtSource3 = new ArrayList<>();
 		ra_userExtSource3.forEach(ra -> attrs_userExtSource3.add(ra.getAttribute()));
 
@@ -13834,11 +13858,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, Group.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, Resource.class, AttributeDefinition.class);
 
 		//find all test member-group attributes group2InVo1 and resource1InVo1
 		List<RichAttribute> ra_group2Vo1_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo1, resource1InVo1, memberResource_test_atr_def);
+			sess, group2InVo1, resource1InVo1, memberResource_test_atr_def);
 		List<Attribute> attrs_group2Vo1_res1Vo1 = new ArrayList<>();
 		ra_group2Vo1_res1Vo1.forEach(ra -> attrs_group2Vo1_res1Vo1.add(ra.getAttribute()));
 
@@ -13847,7 +13871,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes group2InVo2 and resource1InVo2
 		List<RichAttribute> ra_group2Vo2_res1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo2, resource1InVo2, memberResource_test_atr_def);
+			sess, group2InVo2, resource1InVo2, memberResource_test_atr_def);
 		List<Attribute> attrs_group2Vo2_res1Vo2 = new ArrayList<>();
 		ra_group2Vo2_res1Vo2.forEach(ra -> attrs_group2Vo2_res1Vo2.add(ra.getAttribute()));
 
@@ -13864,11 +13888,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
 
 		//find all test member-group attributes member1OfUser1 and group1InVo1
 		List<RichAttribute> ra_member1U1_group1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, group1InVo1, memberResource_test_atr_def);
+			sess, member1OfUser1, group1InVo1, memberResource_test_atr_def);
 		List<Attribute> attrs_member1U1_group1Vo1 = new ArrayList<>();
 		ra_member1U1_group1Vo1.forEach(ra -> attrs_member1U1_group1Vo1.add(ra.getAttribute()));
 
@@ -13877,7 +13901,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group for attributes member1OfUser2 and group2InVo2
 		List<RichAttribute> ra_member1U2_group2Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser2, group2InVo2, memberResource_test_atr_def);
+			sess, member1OfUser2, group2InVo2, memberResource_test_atr_def);
 		List<Attribute> attrs_member1U2_group2Vo2 = new ArrayList<>();
 		ra_member1U2_group2Vo2.forEach(ra -> attrs_member1U2_group2Vo2.add(ra.getAttribute()));
 
@@ -13894,11 +13918,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
 
 		//find all test member-group attributes member1OfUser1 and resource1InVo1
 		List<RichAttribute> ra_member1U1_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, resource1InVo1, memberResource_test_atr_def);
+			sess, member1OfUser1, resource1InVo1, memberResource_test_atr_def);
 		List<Attribute> attrs_member1U1_res1Vo1 = new ArrayList<>();
 		ra_member1U1_res1Vo1.forEach(ra -> attrs_member1U1_res1Vo1.add(ra.getAttribute()));
 
@@ -13907,7 +13931,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes member1OfUser3 and resource1InVo1
 		List<RichAttribute> ra_member1U3_res1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser3, resource1InVo1, memberResource_test_atr_def);
+			sess, member1OfUser3, resource1InVo1, memberResource_test_atr_def);
 		List<Attribute> attrs_member1U3_res1Vo1 = new ArrayList<>();
 		ra_member1U3_res1Vo1.forEach(ra -> attrs_member1U3_res1Vo1.add(ra.getAttribute()));
 
@@ -13923,11 +13947,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find all test member-group attributes user3 and facility2
 		List<RichAttribute> ra_user3_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, facility2, memberResource_test_atr_def);
+			sess, user3, facility2, memberResource_test_atr_def);
 		List<Attribute> attrs_user3_facility2 = new ArrayList<>();
 		ra_user3_facility2.forEach(ra -> attrs_user3_facility2.add(ra.getAttribute()));
 
@@ -13936,7 +13960,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes user1 and facility3
 		List<RichAttribute> ra_user1_facility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility3, memberResource_test_atr_def);
+			sess, user1, facility3, memberResource_test_atr_def);
 		List<Attribute> attrs_user1_facility3 = new ArrayList<>();
 		ra_user1_facility3.forEach(ra -> attrs_user1_facility3.add(ra.getAttribute()));
 
@@ -13944,7 +13968,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test member-group attributes user1 and facility1
 		List<RichAttribute> ra_user1_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility1, memberResource_test_atr_def);
+			sess, user1, facility1, memberResource_test_atr_def);
 		List<Attribute> attrs_user1_facility1 = new ArrayList<>();
 		ra_user1_facility1.forEach(ra -> attrs_user1_facility1.add(ra.getAttribute()));
 
@@ -13960,11 +13984,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForMemberResourceTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getMemberResourceAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all test member-group attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, memberResource_test_atr_def);
+			sess, memberResource_test_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -13988,11 +14012,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, User.class, AttributeDefinition.class);
+			PerunSession.class, User.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for user1
 		List<RichAttribute> ra_user1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, userFacility_test_atr_def);
+			sess, user1, userFacility_test_atr_def);
 		List<Attribute> attrs_user1 = new ArrayList<>();
 		ra_user1.forEach(ra -> attrs_user1.add(ra.getAttribute()));
 
@@ -14002,7 +14026,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for user3
 		List<RichAttribute> ra_user3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, userFacility_test_atr_def);
+			sess, user3, userFacility_test_atr_def);
 		List<Attribute> attrs_user3 = new ArrayList<>();
 		ra_user3.forEach(ra -> attrs_user3.add(ra.getAttribute()));
 
@@ -14020,11 +14044,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, Member.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for member2OfUser3
 		List<RichAttribute> ra_member2OfUser3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser3, userFacility_test_atr_def);
+			sess, member2OfUser3, userFacility_test_atr_def);
 		List<Attribute> attrs_member2OfUser3 = new ArrayList<>();
 		ra_member2OfUser3.forEach(ra -> attrs_member2OfUser3.add(ra.getAttribute()));
 
@@ -14034,7 +14058,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for member2OfUser1
 		List<RichAttribute> ra_member2OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, userFacility_test_atr_def);
+			sess, member2OfUser1, userFacility_test_atr_def);
 		List<Attribute> attrs_member2OfUser1 = new ArrayList<>();
 		ra_member2OfUser1.forEach(ra -> attrs_member2OfUser1.add(ra.getAttribute()));
 
@@ -14042,7 +14066,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for member1OfUser1
 		List<RichAttribute> ra_member1OfUser1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, userFacility_test_atr_def);
+			sess, member1OfUser1, userFacility_test_atr_def);
 		List<Attribute> attrs_member1OfUser1 = new ArrayList<>();
 		ra_member1OfUser1.forEach(ra -> attrs_member1OfUser1.add(ra.getAttribute()));
 
@@ -14059,11 +14083,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for group2InVo2
 		List<RichAttribute> ra_group2InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo2, userFacility_test_atr_def);
+			sess, group2InVo2, userFacility_test_atr_def);
 		List<Attribute> attrs_group2InVo2 = new ArrayList<>();
 		ra_group2InVo2.forEach(ra -> attrs_group2InVo2.add(ra.getAttribute()));
 
@@ -14075,7 +14099,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for group1InVo1
 		List<RichAttribute> ra_group1InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo1, userFacility_test_atr_def);
+			sess, group1InVo1, userFacility_test_atr_def);
 		List<Attribute> attrs_group1InVo1 = new ArrayList<>();
 		ra_group1InVo1.forEach(ra -> attrs_group1InVo1.add(ra.getAttribute()));
 
@@ -14085,7 +14109,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for group2InVo1
 		List<RichAttribute> ra_group2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo1, userFacility_test_atr_def);
+			sess, group2InVo1, userFacility_test_atr_def);
 		List<Attribute> attrs_group2InVo1 = new ArrayList<>();
 		ra_group2InVo1.forEach(ra -> attrs_group2InVo1.add(ra.getAttribute()));
 
@@ -14102,11 +14126,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Resource.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for resource2InVo1
 		List<RichAttribute> ra_resource2InVo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource2InVo1, userFacility_test_atr_def);
+			sess, resource2InVo1, userFacility_test_atr_def);
 		List<Attribute> attrs_resource2InVo1 = new ArrayList<>();
 		ra_resource2InVo1.forEach(ra -> attrs_resource2InVo1.add(ra.getAttribute()));
 
@@ -14115,7 +14139,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for resource1InVo2
 		List<RichAttribute> ra_resource1InVo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, resource1InVo2, userFacility_test_atr_def);
+			sess, resource1InVo2, userFacility_test_atr_def);
 		List<Attribute> attrs_resource1InVo2 = new ArrayList<>();
 		ra_resource1InVo2.forEach(ra -> attrs_resource1InVo2.add(ra.getAttribute()));
 
@@ -14132,11 +14156,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, Vo.class, AttributeDefinition.class);
+			PerunSession.class, Vo.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for vo1
 		List<RichAttribute> ra_vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo1, userFacility_test_atr_def);
+			sess, vo1, userFacility_test_atr_def);
 		List<Attribute> attrs_vo1 = new ArrayList<>();
 		ra_vo1.forEach(ra -> attrs_vo1.add(ra.getAttribute()));
 
@@ -14147,7 +14171,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for vo2
 		List<RichAttribute> ra_vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, vo2, userFacility_test_atr_def);
+			sess, vo2, userFacility_test_atr_def);
 		List<Attribute> attrs_vo2 = new ArrayList<>();
 		ra_vo2.forEach(ra -> attrs_vo2.add(ra.getAttribute()));
 
@@ -14166,11 +14190,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, Facility.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for facility1
 		List<RichAttribute> ra_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility1, userFacility_test_atr_def);
+			sess, facility1, userFacility_test_atr_def);
 		List<Attribute> attrs_facility1 = new ArrayList<>();
 		ra_facility1.forEach(ra -> attrs_facility1.add(ra.getAttribute()));
 
@@ -14180,7 +14204,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for facility2
 		List<RichAttribute> ra_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility2, userFacility_test_atr_def);
+			sess, facility2, userFacility_test_atr_def);
 		List<Attribute> attrs_facility2 = new ArrayList<>();
 		ra_facility2.forEach(ra -> attrs_facility2.add(ra.getAttribute()));
 
@@ -14191,7 +14215,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for facility3
 		List<RichAttribute> ra_facility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, facility3, userFacility_test_atr_def);
+			sess, facility3, userFacility_test_atr_def);
 		List<Attribute> attrs_facility3 = new ArrayList<>();
 		ra_facility3.forEach(ra -> attrs_facility3.add(ra.getAttribute()));
 
@@ -14208,11 +14232,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, Host.class, AttributeDefinition.class);
+			PerunSession.class, Host.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for host1OnFacility1
 		List<RichAttribute> ra_host1OnFacility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility1, userFacility_test_atr_def);
+			sess, host1OnFacility1, userFacility_test_atr_def);
 		List<Attribute> attrs_host1OnFacility1 = new ArrayList<>();
 		ra_host1OnFacility1.forEach(ra -> attrs_host1OnFacility1.add(ra.getAttribute()));
 
@@ -14222,7 +14246,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for host1OnFacility2
 		List<RichAttribute> ra_host1OnFacility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host1OnFacility2, userFacility_test_atr_def);
+			sess, host1OnFacility2, userFacility_test_atr_def);
 		List<Attribute> attrs_host1OnFacility2 = new ArrayList<>();
 		ra_host1OnFacility2.forEach(ra -> attrs_host1OnFacility2.add(ra.getAttribute()));
 
@@ -14233,7 +14257,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for host2OnFacility3
 		List<RichAttribute> ra_host2OnFacility3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, host2OnFacility3, userFacility_test_atr_def);
+			sess, host2OnFacility3, userFacility_test_atr_def);
 		List<Attribute> attrs_host2OnFacility3 = new ArrayList<>();
 		ra_host2OnFacility3.forEach(ra -> attrs_host2OnFacility3.add(ra.getAttribute()));
 
@@ -14250,11 +14274,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, UserExtSource.class, AttributeDefinition.class);
+			PerunSession.class, UserExtSource.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for userExtSource1
 		List<RichAttribute> ra_userExtSource1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource1, userFacility_test_atr_def);
+			sess, userExtSource1, userFacility_test_atr_def);
 		List<Attribute> attrs_userExtSource1 = new ArrayList<>();
 		ra_userExtSource1.forEach(ra -> attrs_userExtSource1.add(ra.getAttribute()));
 
@@ -14264,7 +14288,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for userExtSource3
 		List<RichAttribute> ra_userExtSource3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userExtSource3, userFacility_test_atr_def);
+			sess, userExtSource3, userFacility_test_atr_def);
 		List<Attribute> attrs_userExtSource3 = new ArrayList<>();
 		ra_userExtSource3.forEach(ra -> attrs_userExtSource3.add(ra.getAttribute()));
 
@@ -14282,11 +14306,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, Group.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Group.class, Resource.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for group2InVo1 and resource2InVo1
 		List<RichAttribute> ra_group2Vo1_resource2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo1, resource2InVo1, userFacility_test_atr_def);
+			sess, group2InVo1, resource2InVo1, userFacility_test_atr_def);
 		List<Attribute> attrs_group2Vo1_resource2Vo1 = new ArrayList<>();
 		ra_group2Vo1_resource2Vo1.forEach(ra -> attrs_group2Vo1_resource2Vo1.add(ra.getAttribute()));
 
@@ -14295,7 +14319,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for group1InVo1 and resource1InVo1
 		List<RichAttribute> ra_group1Vo1_resource1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group1InVo1, resource1InVo1, userFacility_test_atr_def);
+			sess, group1InVo1, resource1InVo1, userFacility_test_atr_def);
 		List<Attribute> attrs_group1Vo1_resource1Vo1 = new ArrayList<>();
 		ra_group1Vo1_resource1Vo1.forEach(ra -> attrs_group1Vo1_resource1Vo1.add(ra.getAttribute()));
 
@@ -14305,7 +14329,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for group2InVo2 and resource1InVo2
 		List<RichAttribute> ra_group2Vo2_resource1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, group2InVo2, resource1InVo2, userFacility_test_atr_def);
+			sess, group2InVo2, resource1InVo2, userFacility_test_atr_def);
 		List<Attribute> attrs_group2Vo2_resource1Vo2 = new ArrayList<>();
 		ra_group2Vo2_resource1Vo2.forEach(ra -> attrs_group2Vo2_resource1Vo2.add(ra.getAttribute()));
 
@@ -14322,11 +14346,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Group.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for member1OfUser1 and group2InVo1
 		List<RichAttribute> ra_member1U1_group2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser1, group2InVo1, userFacility_test_atr_def);
+			sess, member1OfUser1, group2InVo1, userFacility_test_atr_def);
 		List<Attribute> attrs_member1U1_group2Vo1 = new ArrayList<>();
 		ra_member1U1_group2Vo1.forEach(ra -> attrs_member1U1_group2Vo1.add(ra.getAttribute()));
 
@@ -14336,7 +14360,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for member2OfUser1 and group1InVo2
 		List<RichAttribute> ra_member2U1_group1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser1, group1InVo2, userFacility_test_atr_def);
+			sess, member2OfUser1, group1InVo2, userFacility_test_atr_def);
 		List<Attribute> attrs_member2U1_group1Vo2 = new ArrayList<>();
 		ra_member2U1_group1Vo2.forEach(ra -> attrs_member2U1_group1Vo2.add(ra.getAttribute()));
 
@@ -14344,7 +14368,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for member1OfUser3 and group1InVo1
 		List<RichAttribute> ra_member1U3_group1Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser3, group1InVo1, userFacility_test_atr_def);
+			sess, member1OfUser3, group1InVo1, userFacility_test_atr_def);
 		List<Attribute> attrs_member1U3_group1Vo1 = new ArrayList<>();
 		ra_member1U3_group1Vo1.forEach(ra -> attrs_member1U3_group1Vo1.add(ra.getAttribute()));
 
@@ -14360,11 +14384,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
+			PerunSession.class, Member.class, Resource.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for member1OfUser3 and resource2InVo1
 		List<RichAttribute> ra_member1U1_res2Vo1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser3, resource2InVo1, userFacility_test_atr_def);
+			sess, member1OfUser3, resource2InVo1, userFacility_test_atr_def);
 		List<Attribute> attrs_member1U1_res2Vo1 = new ArrayList<>();
 		ra_member1U1_res2Vo1.forEach(ra -> attrs_member1U1_res2Vo1.add(ra.getAttribute()));
 
@@ -14372,7 +14396,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for member2OfUser3 and resource1InVo2
 		List<RichAttribute> ra_member2U3_res1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member2OfUser3, resource1InVo2, userFacility_test_atr_def);
+			sess, member2OfUser3, resource1InVo2, userFacility_test_atr_def);
 		List<Attribute> attrs_member2U3_res1Vo2 = new ArrayList<>();
 		ra_member2U3_res1Vo2.forEach(ra -> attrs_member2U3_res1Vo2.add(ra.getAttribute()));
 
@@ -14381,7 +14405,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for member1OfUser2 and resource1InVo2
 		List<RichAttribute> ra_member1U2_res1Vo2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, member1OfUser2, resource1InVo2, userFacility_test_atr_def);
+			sess, member1OfUser2, resource1InVo2, userFacility_test_atr_def);
 		List<Attribute> attrs_member1U2_res1Vo2 = new ArrayList<>();
 		ra_member1U2_res1Vo2.forEach(ra -> attrs_member1U2_res1Vo2.add(ra.getAttribute()));
 
@@ -14397,11 +14421,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
+			PerunSession.class, User.class, Facility.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes for user1 and facility1
 		List<RichAttribute> ra_user1_facility1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user1, facility1, userFacility_test_atr_def);
+			sess, user1, facility1, userFacility_test_atr_def);
 		List<Attribute> attrs_user1_facility1 = new ArrayList<>();
 		ra_user1_facility1.forEach(ra -> attrs_user1_facility1.add(ra.getAttribute()));
 
@@ -14410,7 +14434,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 
 		//find all test user-facility attributes for user3 and facilty2
 		List<RichAttribute> ra_user3_facility2 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, user3, facility2, userFacility_test_atr_def);
+			sess, user3, facility2, userFacility_test_atr_def);
 		List<Attribute> attrs_user3_facility2 = new ArrayList<>();
 		ra_user3_facility2.forEach(ra -> attrs_user3_facility2.add(ra.getAttribute()));
 
@@ -14426,11 +14450,11 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForUserFacilityTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getUserFacilityAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		//find all test user-facility attributes
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, userFacility_test_atr_def);
+			sess, userFacility_test_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -14452,10 +14476,10 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForEntitylessTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getEntitylessAttributes",
-				PerunSession.class, AttributeDefinition.class);
+			PerunSession.class, AttributeDefinition.class);
 
 		List<RichAttribute> ra_all = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, entityless_test_atr_def);
+			sess, entityless_test_atr_def);
 		List<Attribute> attrs_all = new ArrayList<>();
 		ra_all.forEach(ra -> attrs_all.add(ra.getAttribute()));
 
@@ -14471,10 +14495,10 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		setAttributesForEntitylessTest();
 
 		Method testedMethod = getPrivateMethodFromAtrManager("getEntitylessAttributes",
-				PerunSession.class, String.class, AttributeDefinition.class);
+			PerunSession.class, String.class, AttributeDefinition.class);
 
 		List<RichAttribute> ra_key1 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, "1", entityless_test_atr_def);
+			sess, "1", entityless_test_atr_def);
 		List<Attribute> attrs_key1 = new ArrayList<>();
 		ra_key1.forEach(ra -> attrs_key1.add(ra.getAttribute()));
 
@@ -14482,7 +14506,7 @@ public class AttributesManagerEntryIntegrationTest extends AbstractPerunIntegrat
 		assertTrue(attrs_key1.contains(entityless_test_attribute1));
 
 		List<RichAttribute> ra_key3 = (List<RichAttribute>) testedMethod.invoke(attributesManagerBl,
-				sess, "3", entityless_test_atr_def);
+			sess, "3", entityless_test_atr_def);
 		List<Attribute> attrs_key3 = new ArrayList<>();
 		ra_key3.forEach(ra -> attrs_key3.add(ra.getAttribute()));
 

@@ -118,7 +118,7 @@ public interface AttributesManager {
 	String ATTRIBUTES_REGEXP = "^[-a-zA-Z0-9]+([:][-a-zA-Z0-9]+)?$";
 
 	String[] ENTITY_TYPES = {"facility", "resource", "member_resource", "member_group",
-			"member", "user_facility", "user", "vo", "group", "host", "group_resource", "entityless", "ues"};
+		"member", "user_facility", "user", "vo", "group", "host", "group_resource", "entityless", "ues"};
 
 	/**
 	 * Get all <b>non-empty</b> attributes associated with the facility.
@@ -315,7 +315,7 @@ public interface AttributesManager {
 	 * @throws WrongAttributeAssignmentException when passed non-entityless attribute
 	 */
 	Map<String, Attribute> getEntitylessAttributesWithKeys(PerunSession sess, String attrName)
-			throws PrivilegeException, AttributeNotExistsException, WrongAttributeAssignmentException;
+		throws PrivilegeException, AttributeNotExistsException, WrongAttributeAssignmentException;
 
 	/**
 	 * Get entityless attributes mapped by their keys.
@@ -330,7 +330,7 @@ public interface AttributesManager {
 	 * @throws WrongAttributeAssignmentException when passed non-entityless attribute
 	 */
 	Map<String, Attribute> getEntitylessAttributesWithKeys(PerunSession sess, String attrName, List<String> keys)
-			throws PrivilegeException, AttributeNotExistsException, WrongAttributeAssignmentException;
+		throws PrivilegeException, AttributeNotExistsException, WrongAttributeAssignmentException;
 
 	/**
 	 * Get all <b>non-empty</b> member, user, member-resource and user-facility attributes.
@@ -4140,12 +4140,13 @@ public interface AttributesManager {
 	 * @param attr attribute definition
 	 * @param action critical action
 	 * @param critical true if action should be set critical, false to non-critical
+	 * @param global true if action should be globally critical, false if action should be critical only for critical objects
 	 *
 	 * @throws RelationExistsException if trying to mark already critical action
 	 * @throws RelationNotExistsException if trying to unmark not critical action
 	 * @throws PrivilegeException insufficient permissions
 	 */
-	void setAttributeActionCriticality(PerunSession sess, AttributeDefinition attr, AttributeAction action, boolean critical) throws RelationExistsException, RelationNotExistsException, PrivilegeException;
+	void setAttributeActionCriticality(PerunSession sess, AttributeDefinition attr, AttributeAction action, boolean critical, boolean global) throws RelationExistsException, RelationNotExistsException, PrivilegeException;
 
 	/**
 	 * Returns list of definitions of IdP attributes that are filled to fedInfo

@@ -147,6 +147,7 @@ import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static cz.metacentrum.perun.core.api.AttributeAction.READ;
 import static cz.metacentrum.perun.core.api.AttributeAction.WRITE;
@@ -580,7 +581,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 
 	@Override
 	public Map<String, Attribute> getEntitylessAttributesWithKeys(PerunSession sess, String attrName)
-			throws AttributeNotExistsException, WrongAttributeAssignmentException {
+		throws AttributeNotExistsException, WrongAttributeAssignmentException {
 		AttributeDefinition definition = getAttributeDefinition(sess, attrName);
 		List<String> keys = getEntitylessKeys(sess, definition);
 		return getEntitylessAttributesWithKeys(sess, attrName, keys);
@@ -588,7 +589,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 
 	@Override
 	public Map<String, Attribute> getEntitylessAttributesWithKeys(PerunSession sess, String attrName, List<String> keys)
-			throws AttributeNotExistsException, WrongAttributeAssignmentException {
+		throws AttributeNotExistsException, WrongAttributeAssignmentException {
 		AttributeDefinition definition = getAttributeDefinition(sess, attrName);
 
 		Map<String, Attribute> attributesByKeys = new HashMap<>();
@@ -2349,7 +2350,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 			if (!(storedAttribute.getValue() == null ? attribute.getValue() == null : storedAttribute.getValue().equals(attribute.getValue()))) { //unless attribute and storedAttribute have equals value
 				//FIXME
 				if (attribute.getName().equals(AttributesManager.NS_GROUP_RESOURCE_ATTR_VIRT + ":unixGID") ||
-						attribute.getName().equals(AttributesManager.NS_GROUP_RESOURCE_ATTR_VIRT + ":unixGroupName")) {
+					attribute.getName().equals(AttributesManager.NS_GROUP_RESOURCE_ATTR_VIRT + ":unixGroupName")) {
 					return getAttributesManagerImpl().setVirtualAttribute(sess, resource, group, attribute);
 				} else {
 					throw new InternalErrorException("Virtual attribute can't be set this way yet. Please set physical attribute. " + attribute);
@@ -2506,7 +2507,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 
 		// mark WRITE action on this attribute as critical
 		try {
-			setAttributeActionCriticality(sess, attribute, AttributeAction.WRITE, true);
+			setAttributeActionCriticality(sess, attribute, AttributeAction.WRITE, true, false);
 		} catch (RelationExistsException | RelationNotExistsException ignored) {
 		}
 
@@ -2563,7 +2564,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 			}
 
 			Set<AttributeDefinition> allAttributeDependencies =
-					findAllAttributeDependencies(attributeDef, inverseDependenciesCopy, inverseStrongDependenciesCopy);
+				findAllAttributeDependencies(attributeDef, inverseDependenciesCopy, inverseStrongDependenciesCopy);
 			allDependenciesCopy.put(attributeDef, allAttributeDependencies);
 
 			// if all went well, switch dependencies maps
@@ -5477,7 +5478,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 		this.checkGroupIsFromTheSameVoLikeResource(sess, group, resource);
 		this.checkNamespace(sess, attributeDefinition, NS_GROUP_RESOURCE_ATTR);
 		return getPerunBl().getResourcesManagerBl().isGroupAssigned(sess, resource, group) &&
-				getAttributesManagerImpl().isAttributeRequiredByResource(sess, resource, attributeDefinition);
+			getAttributesManagerImpl().isAttributeRequiredByResource(sess, resource, attributeDefinition);
 	}
 
 	@Override
@@ -5561,7 +5562,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 
 	@Override
 	public void mergeAttributesValues(PerunSession sess, User user, List<Attribute> attributes) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
 		for (Attribute attribute : attributes) {
 			this.mergeAttributeValue(sess, user, attribute);
 		}
@@ -5569,7 +5570,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 
 	@Override
 	public void mergeAttributesValues(PerunSession sess, Member member, List<Attribute> attributes) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
 		for (Attribute attribute : attributes) {
 			this.mergeAttributeValue(sess, member, attribute);
 		}
@@ -5598,7 +5599,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	 */
 	@SuppressWarnings("unchecked")
 	private Attribute mergeAttributeValue(PerunSession sess, Attribute attribute, PerunBean primaryHolder) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
 		//If attribute is null, throw an exception
 		if (attribute == null) throw new InternalErrorException("Can't merge null attribute with anything!");
 		if (primaryHolder == null)
@@ -5662,19 +5663,19 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 
 	@Override
 	public Attribute mergeAttributeValue(PerunSession sess, User user, Attribute attribute) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
 		return this.mergeAttributeValue(sess, attribute, user);
 	}
 
 	@Override
 	public Attribute mergeAttributeValue(PerunSession sess, Member member, Attribute attribute) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
 		return this.mergeAttributeValue(sess, attribute, member);
 	}
 
 	@Override
 	public Attribute mergeAttributeValue(PerunSession sess, Group group, Attribute attribute) throws WrongAttributeValueException,
-			WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
+		WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
 		return this.mergeAttributeValue(sess, attribute, group);
 	}
 
@@ -6755,7 +6756,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 			}
 		} else {
 			throw new ConsistencyErrorException("Invalid attribute value type: " + attribute.getType() +
-					" class: " + attribute.getValue().getClass().getName());
+				" class: " + attribute.getValue().getClass().getName());
 		}
 	}
 
@@ -7992,7 +7993,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 		attr.setDisplayName("User eligibilities");
 		attr.setType(LinkedHashMap.class.getName());
 		attr.setDescription("Virtual attribute, which collects all eligibilities user ext source attributes " +
-				"with keys and values (map). Only the highest value is selected for each key.");
+			"with keys and values (map). Only the highest value is selected for each key.");
 		policies = new ArrayList<>();
 		attributes.put(attr, createInitialPolicyCollections(policies));
 
@@ -8123,7 +8124,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 		attr.setFriendlyName("randomPwdResetTemplate");
 		attr.setDisplayName("Random password reset templates");
 		attr.setDescription("Random password reset templates. Each value should be String representing an HTML page." +
-				" Keywords {password} and {login} will be replaced.");
+			" Keywords {password} and {login} will be replaced.");
 
 		policies = new ArrayList<>();
 		attributes.put(attr, createInitialPolicyCollections(policies));
@@ -8490,7 +8491,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 
 			for (AttributeDefinition key : allDependencies.keySet()) {
 				Set<AttributeDefinition> dependenciesOfAttribute = findAllAttributeDependencies(key,
-						inverseDependencies, inverseStrongDependencies);
+					inverseDependencies, inverseStrongDependencies);
 
 				allDependencies.put(key, dependenciesOfAttribute);
 			}
@@ -8509,8 +8510,8 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	 * @return Set of all attribute definitions that depend on given attribute definition
 	 */
 	private Set<AttributeDefinition> findAllAttributeDependencies(AttributeDefinition key,
-	                                                              Map<AttributeDefinition, Set<AttributeDefinition>> inverseDependencies,
-	                                                              Map<AttributeDefinition, Set<AttributeDefinition>> inverseStrongDependencies) {
+																  Map<AttributeDefinition, Set<AttributeDefinition>> inverseDependencies,
+																  Map<AttributeDefinition, Set<AttributeDefinition>> inverseStrongDependencies) {
 
 		Set<AttributeDefinition> dependenciesOfAttribute = new HashSet<>();
 
@@ -8534,7 +8535,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	 * @param dependencies input dependencies
 	 */
 	private Map<AttributeDefinition, Set<AttributeDefinition>> generateInverseDependencies(Map<AttributeDefinition,
-			Set<AttributeDefinition>> dependencies) {
+		Set<AttributeDefinition>> dependencies) {
 
 		Map<AttributeDefinition, Set<AttributeDefinition>> inverseDependencies = new HashMap<>();
 		dependencies.keySet().forEach(attr -> inverseDependencies.put(attr, new HashSet<>()));
@@ -8555,8 +8556,8 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	 * @param inverseDependencies inverse dependencies that will be updated
 	 */
 	private void updateInverseDependenciesForAttribute(Map<AttributeDefinition, Set<AttributeDefinition>> inverseDependencies,
-	                                                   AttributeDefinition attributeDefinition,
-	                                                   Map<AttributeDefinition, Set<AttributeDefinition>> dependencies) {
+													   AttributeDefinition attributeDefinition,
+													   Map<AttributeDefinition, Set<AttributeDefinition>> dependencies) {
 
 		if (!inverseDependencies.containsKey(attributeDefinition)) {
 			inverseDependencies.put(attributeDefinition, new HashSet<>());
@@ -8733,7 +8734,14 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	@Override
 	public AttributeRules getAttributeRules(PerunSession sess, int attributeId) {
 		AttributeRules attrRules = new AttributeRules(getAttributesManagerImpl().getAttributePolicyCollections(sess, attributeId));
-		attrRules.setCriticalActions(getAttributesManagerImpl().getCriticalAttributeActions(sess, attributeId));
+		Map<AttributeAction, Boolean> actionMap = getAttributesManagerImpl()
+			.getCriticalAttributeActions(sess, attributeId)
+			.stream()
+			.collect(Collectors.toMap(
+				attrAction -> attrAction,
+				attrAction -> getAttributesManagerImpl().isAttributeActionGloballyCritical(sess, attributeId, attrAction)
+			));
+		attrRules.setCriticalActions(actionMap);
 		return attrRules;
 	}
 
@@ -8844,8 +8852,8 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 
 	private Graph getAttributeModulesDependenciesGraph(PerunSession session, NodeGenerator<AttributeDefinition> nodeGenerator) {
 		GraphDefinition<AttributeDefinition> graphDefinition = new GraphDefinition<AttributeDefinition>()
-				.addEntitiesData(strongDependencies).withEdgeType(GraphEdge.Type.BOLD)
-				.addEntitiesData(dependencies).withEdgeType(GraphEdge.Type.DASHED);
+			.addEntitiesData(strongDependencies).withEdgeType(GraphEdge.Type.BOLD)
+			.addEntitiesData(dependencies).withEdgeType(GraphEdge.Type.DASHED);
 
 		return new NoDuplicatedEdgesGraphGenerator<AttributeDefinition>().generate(nodeGenerator, graphDefinition);
 	}
@@ -8861,13 +8869,18 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	}
 
 	@Override
+	public boolean isAttributeActionGloballyCritical(PerunSession sess, AttributeDefinition attr, AttributeAction action) {
+		return getAttributesManagerImpl().isAttributeActionGloballyCritical(sess, attr.getId(), action);
+	}
+
+	@Override
 	public List<AttributeAction> getCriticalAttributeActions(PerunSession sess, int attrId) {
 		return getAttributesManagerImpl().getCriticalAttributeActions(sess, attrId);
 	}
 
 	@Override
-	public void setAttributeActionCriticality(PerunSession sess, AttributeDefinition attr, AttributeAction action, boolean critical) throws RelationExistsException, RelationNotExistsException {
-		getAttributesManagerImpl().setAttributeActionCriticality(sess, attr, action, critical);
+	public void setAttributeActionCriticality(PerunSession sess, AttributeDefinition attr, AttributeAction action, boolean critical, boolean global) throws RelationExistsException, RelationNotExistsException {
+		getAttributesManagerImpl().setAttributeActionCriticality(sess, attr, action, critical, global);
 	}
 
 	@Override
