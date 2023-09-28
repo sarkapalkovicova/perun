@@ -2954,6 +2954,20 @@ public class AuthzResolverBlImpl implements AuthzResolverBl {
 	}
 
 	/**
+	 * Check if the given group passes the user's roles filter.
+	 *
+	 * @param sess session
+	 * @param user user
+	 * @param group group
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
+	 * @return list of groups
+	 */
+	public static boolean groupMatchesUserRolesFilter(PerunSession sess, User user, Group group, List<String> roles, List<String> types) {
+		return authzResolverImpl.groupMatchesUserRolesFilter(sess, user, group, roles, types);
+	}
+
+	/**
 	 * Get all Groups where the given user has set one of the given roles
 	 * or the given user is a member of an authorized group with such roles.
 	 *

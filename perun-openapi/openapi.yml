@@ -876,6 +876,8 @@ components:
         sortColumn: { $ref: '#/components/schemas/GroupsOrderColumn' }
         memberId: { type: integer }
         searchString: { type: string }
+        roles: { type: array, items: { type: string } }
+        types: { type: array, items: { type: string } }
       required:
         - pageSize
         - offset
@@ -13205,6 +13207,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/voId'
         - $ref: '#/components/parameters/attrNames'
+        - { name: "roles[]", schema: { type: array, items: { type: string } }, in: query, description: "list of roles: GROUPADMIN, GROUPOBSERVER, GROUPMEMBERSHIPMANAGER" }
+        - { name: "types[]", schema: { type: array, items: { type: string } }, in: query, description: "list of role types: DIRECT, INDIRECT" }
       responses:
         '200':
           $ref: '#/components/responses/ListOfRichGroupsResponse'
@@ -13220,6 +13224,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/groupId'
         - $ref: '#/components/parameters/attrNamesOptional'
+        - { name: "roles[]", schema: { type: array, items: { type: string } }, in: query, description: "list of roles: GROUPADMIN, GROUPOBSERVER, GROUPMEMBERSHIPMANAGER" }
+        - { name: "types[]", schema: { type: array, items: { type: string } }, in: query, description: "list of role types: DIRECT, INDIRECT" }
       responses:
         '200':
           $ref: '#/components/responses/ListOfRichGroupsResponse'
@@ -13667,6 +13673,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/memberId'
         - $ref: '#/components/parameters/attrNames'
+        - { name: "roles[]", schema: { type: array, items: { type: string } }, in: query, description: "list of roles: GROUPADMIN, GROUPOBSERVER, GROUPMEMBERSHIPMANAGER" }
+        - { name: "types[]", schema: { type: array, items: { type: string } }, in: query, description: "list of role types: DIRECT, INDIRECT" }
       responses:
         '200':
           $ref: '#/components/responses/ListOfRichGroupsResponse'

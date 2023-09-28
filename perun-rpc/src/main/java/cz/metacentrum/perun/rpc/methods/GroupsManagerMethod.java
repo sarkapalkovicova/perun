@@ -1534,8 +1534,8 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	},
 
 	/*#
-	 * Returns sub-list of all RichGroups, each containing selected attributes, starting at fromIndex (included)
-	 * and ending at the size of the original list.
+	 * Returns sub-list of all RichGroups, each containing selected attributes filtered by role and its type,
+	 * starting at fromIndex (included) and ending at the size of the original list.
 	 *
 	 * Example: [1,2,3,4], fromIndex=1 => [2,3,4]
 	 *
@@ -1544,23 +1544,27 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	 * @param vo int <code>id</code> of vo
 	 * @param fromIndex int begin index of returned subList, included
 	 * @param attrNames List<String> if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing selected attributes
 	 */
 	/*#
-	 * Returns sub-list of all RichGroups, each containing all attributes, starting at fromIndex (included)
-	 * and ending at the size of the original list.
+	 * Returns sub-list of all RichGroups, each containing all attributes filtered by role and its type,
+	 * starting at fromIndex (included) and ending at the size of the original list.
 	 *
 	 * Example: [1,2,3,4], fromIndex=1 => [2,3,4]
 	 *
 	 * @throw VoNotExistsException When Vo doesn't exist
 	 *
 	 * @param vo int <code>id</code> of vo
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @param fromIndex int begin index of returned subList, included
 	 * @return List<RichGroup> RichGroups containing all attributes
 	 */
 	/*#
-	 * Returns sub-list of all RichGroups, each containing selected attributes, starting at first index of the original
-	 * list (included) and ending at the toIndex (included).
+	 * Returns sub-list of all RichGroups, each containing selected attributesfiltered by role and its type,
+	 * starting at first index of the original list (included) and ending at the toIndex (included).
 	 *
 	 * Example: [1,2,3,4], toIndex=2 => [1,2,3]
 	 *
@@ -1569,23 +1573,27 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	 * @param vo int <code>id</code> of vo
 	 * @param toIndex int end index of returned subList, included
 	 * @param attrNames List<String> if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing selected attributes
 	 */
 	/*#
-	 * Returns sub-list of all RichGroups, each containing all attributes, starting at first index of the original
-	 * list (included) and ending at the toIndex (included).
+	 * Returns sub-list of all RichGroups, each containing all attributes filtered by role and its type,
+	 * starting at first index of the original list (included) and ending at the toIndex (included).
 	 *
 	 * Example: [1,2,3,4], toIndex=2 => [1,2,3]
 	 *
 	 * @throw VoNotExistsException When Vo doesn't exist
 	 *
 	 * @param vo int <code>id</code> of vo
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @param toIndex int end index of returned subList, included
 	 * @return List<RichGroup> RichGroups containing all attributes
 	 */
 	/*#
-	 * Returns sub-list of all RichGroups, each containing selected attributes, starting at fromIndex (included)
-	 * and ending at the toIndex (included).
+	 * Returns sub-list of all RichGroups, each containing selected attributes filtered by role and its type,
+	 * starting at fromIndex (included) and ending at the toIndex (included).
 	 *
 	 * Example: [1,2,3,4], fromIndex=1, toIndex=2 => [2,3]
 	 *
@@ -1595,46 +1603,62 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	 * @param fromIndex int begin index of returned subList, included
 	 * @param toIndex int end index of returned subList, included
 	 * @param attrNames List<String> if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing selected attributes
 	 */
 	/*#
-	 * Returns sub-list of all RichGroups, each containing all attributes, starting at fromIndex (included)
-	 * and ending at the toIndex (included).
+	 * Returns sub-list of all RichGroups, each containing all attributes filtered by role and its type,
+	 * starting at fromIndex (included) and ending at the toIndex (included).
 	 *
 	 * Example: [1,2,3,4], fromIndex=1, toIndex=2 => [2,3]
 	 *
 	 * @throw VoNotExistsException When Vo doesn't exist
 	 *
 	 * @param vo int <code>id</code> of vo
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @param fromIndex int begin index of returned subList, included
 	 * @param toIndex int end index of returned subList, included
 	 * @return List<RichGroup> RichGroups containing all attributes
 	 */
 	/*#
-	 * Returns full list of all RichGroups containing selected attributes.
+	 * Returns full list of all RichGroups containing selected attributes filtered by role and its type.
 	 *
 	 * @throw VoNotExistsException When Vo doesn't exist
 	 *
 	 * @param vo int <code>id</code> of vo
 	 * @param attrNames List<String> if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing selected attributes
 	 */
 	/*#
-	 * Returns full list of all RichGroups containing all attributes.
+	 * Returns full list of all RichGroups containing all attributes filtered by role and its type.
 	 *
 	 * @throw VoNotExistsException When Vo doesn't exist
 	 *
 	 * @param vo int <code>id</code> of vo
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing all attributes
 	 */
 	getAllRichGroupsWithAttributesByNames {
 
 		@Override
 		public List<RichGroup> call(ApiCaller ac, Deserializer parms) throws PerunException {
-
-			List<RichGroup> listOfRichGroups = ac.getGroupsManager().getAllRichGroupsWithAttributesByNames(ac.getSession(),
-				ac.getVoById(parms.readInt("vo")),
-				parms.contains("attrNames") ? parms.readList("attrNames", String.class) : null);
+			List<RichGroup> listOfRichGroups = new ArrayList<>();
+			if (parms.contains("roles") || parms.contains("types")) {
+				listOfRichGroups = ac.getGroupsManager().getAllRichGroupsWithAttributesByNames(
+					ac.getSession(), ac.getVoById(parms.readInt("vo")),
+					parms.contains("attrNames") ? parms.readList("attrNames", String.class) : null,
+					parms.contains("roles") ? parms.readList("roles", String.class) : new ArrayList<>(),
+					parms.contains("types") ? parms.readList("types", String.class) : new ArrayList<>());
+			} else {
+				listOfRichGroups = ac.getGroupsManager().getAllRichGroupsWithAttributesByNames(ac.getSession(),
+					ac.getVoById(parms.readInt("vo")),
+					parms.contains("attrNames") ? parms.readList("attrNames", String.class) : null);
+			}
 
 			if(listOfRichGroups == null) listOfRichGroups = new ArrayList<>();
 
@@ -1652,8 +1676,8 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	},
 
 	/*#
-	 * Returns sub-list of member's RichGroups, each containing selected attributes, starting at fromIndex (included)
-	 * and ending at the size of the original list.
+	 * Returns sub-list of member's RichGroups, each containing selected attributes filtered by role and its type,
+	 * starting at fromIndex (included) and ending at the size of the original list.
 	 *
 	 * Example: [1,2,3,4], fromIndex=1 => [2,3,4]
 	 *
@@ -1668,11 +1692,13 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	 * @param member int <code>id</code> of member
 	 * @param fromIndex int begin index of returned subList, included
 	 * @param attrNames List<String> if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing selected attributes
 	 */
 	/*#
-	 * Returns sub-list of member's RichGroups, each containing selected attributes, starting at first index of the original
-	 * list (included) and ending at the toIndex (included).
+	 * Returns sub-list of member's RichGroups, each containing selected attributes filtered by role and its type,
+	 * starting at first index of the original list (included) and ending at the toIndex (included).
 	 *
 	 * Example: [1,2,3,4], toIndex=2 => [1,2,3]
 	 *
@@ -1687,11 +1713,13 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	 * @param member int <code>id</code> of member
 	 * @param toIndex int end index of returned subList, included
 	 * @param attrNames List<String> if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing selected attributes
 	 */
 	/*#
-	 * Returns sub-list of member's RichGroups, each containing selected attributes, starting at fromIndex (included)
-	 * and ending at the toIndex (included).
+	 * Returns sub-list of member's RichGroups, each containing selected attributes filtered by role and its type,
+	 * starting at fromIndex (included) and ending at the toIndex (included).
 	 *
 	 * Example: [1,2,3,4], fromIndex=1, toIndex=2 => [2,3]
 	 *
@@ -1707,10 +1735,12 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	 * @param fromIndex int begin index of returned subList, included
 	 * @param toIndex int end index of returned subList, included
 	 * @param attrNames List<String> if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing selected attributes
 	 */
 	/*#
-	 * Returns full list of member's RichGroups containing selected attributes.
+	 * Returns full list of member's RichGroups containing selected attributes filtered by role and its type.
 	 *
 	 * "members" group is not included!
 	 *
@@ -1722,16 +1752,26 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	 *
 	 * @param member int <code>id</code> of member
 	 * @param attrNames List<String> if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing selected attributes
 	 */
 	getMemberRichGroupsWithAttributesByNames {
 
 		@Override
 		public List<RichGroup> call(ApiCaller ac, Deserializer parms) throws PerunException {
-
-			List<RichGroup> listOfRichGroups = ac.getGroupsManager().getMemberRichGroupsWithAttributesByNames(ac.getSession(),
-				ac.getMemberById(parms.readInt("member")),
-				parms.readList("attrNames", String.class));
+			List<RichGroup> listOfRichGroups = new ArrayList<>();
+			if (parms.contains("roles") || parms.contains("types")) {
+				listOfRichGroups = ac.getGroupsManager().getMemberRichGroupsWithAttributesByNames(ac.getSession(),
+					ac.getMemberById(parms.readInt("member")),
+					parms.readList("attrNames", String.class),
+					parms.contains("roles") ? parms.readList("roles", String.class) : new ArrayList<>(),
+					parms.contains("types") ? parms.readList("types", String.class) : new ArrayList<>());
+			} else {
+				listOfRichGroups = ac.getGroupsManager().getMemberRichGroupsWithAttributesByNames(ac.getSession(),
+					ac.getMemberById(parms.readInt("member")),
+					parms.readList("attrNames", String.class));
+			}
 
 			if(listOfRichGroups == null) listOfRichGroups = new ArrayList<>();
 
@@ -1769,22 +1809,30 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	},
 
 	/*#
-	 * Returns all AllRichSubGroups from parent group containing selected attributes (all level subgroups).
+	 * Returns all AllRichSubGroups from parent group containing selected attributes filtered by role and its type (all level subgroups).
 	 *
 	 * @throw GroupNotExistsException When the group doesn't exist
 	 *
 	 * @param group int <code>id</code> of group
 	 * @param attrNames List<String> if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return List<RichGroup> RichGroups containing selected attributes
 	 */
 	getAllRichSubGroupsWithAttributesByNames {
 
 		@Override
 		public List<RichGroup> call(ApiCaller ac, Deserializer parms) throws PerunException {
-
-			return ac.getGroupsManager().getAllRichSubGroupsWithAttributesByNames(ac.getSession(),
+			if (parms.contains("roles") || parms.contains("types")) {
+				return ac.getGroupsManager().getAllRichSubGroupsWithAttributesByNames(ac.getSession(),
 					ac.getGroupById(parms.readInt("group")),
-					parms.readList("attrNames", String.class));
+					parms.readList("attrNames", String.class),
+					parms.contains("roles") ? parms.readList("roles", String.class) : new ArrayList<>(),
+					parms.contains("types") ? parms.readList("types", String.class) : new ArrayList<>());
+			}
+			return ac.getGroupsManager().getAllRichSubGroupsWithAttributesByNames(ac.getSession(),
+				ac.getGroupById(parms.readInt("group")),
+				parms.readList("attrNames", String.class));
 		}
 	},
 

@@ -1234,6 +1234,26 @@ public interface GroupsManager {
 	List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames) throws MemberNotExistsException, PrivilegeException;
 
 	/**
+	 * Return all RichGroups for specified member, containing selected attributes filtered by role and its type.
+	 * "members" group is not included.
+	 *
+	 * Supported are attributes from these namespaces:
+	 *  - group
+	 *  - member-group
+	 *
+	 * @param sess internal session
+	 * @param member the member to get the rich groups for
+	 * @param attrNames list of selected attributes from supported namespaces
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
+	 * @return list of rich groups with selected attributes
+	 * @throws InternalErrorException
+	 * @throws MemberNotExistsException
+	 * @throws PrivilegeException
+	 */
+	List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames, List<String> roles, List<String> types) throws MemberNotExistsException, PrivilegeException;
+
+	/**
 	 * Return all RichGroups containing selected attributes
 	 *
 	 * @param sess
@@ -1244,6 +1264,20 @@ public interface GroupsManager {
 	 * @throws VoNotExistsException
 	 */
 	List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames) throws VoNotExistsException, PrivilegeException;
+
+	/**
+	 * Return all RichGroups containing selected attributes filtered by role and its type
+	 *
+	 * @param sess perun session
+	 * @param vo vo
+	 * @param attrNames if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
+	 * @return List of RichGroups
+	 * @throws InternalErrorException
+	 * @throws VoNotExistsException
+	 */
+	List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames, List<String> roles, List<String> types) throws VoNotExistsException, PrivilegeException;
 
 	/**
 	 * Return RichSubGroups in parentGroup (only 1 level subgroups) containing selected attributes
@@ -1268,6 +1302,20 @@ public interface GroupsManager {
 	 * @throws GroupNotExistsException
 	 */
 	List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames) throws GroupNotExistsException, PrivilegeException;
+
+	/**
+	 * Return all RichSubGroups in parentGroup (all levels sub groups) containing selected attributes filtered by role and its type,
+	 *
+	 * @param sess perun session
+	 * @param parentGroup parent group
+	 * @param attrNames if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
+	 * @return List of RichGroups
+	 * @throws InternalErrorException
+	 * @throws GroupNotExistsException
+	 */
+	List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames, List<String> roles, List<String> types) throws GroupNotExistsException, PrivilegeException;
 
 	/**
 	 * Return RichGroup selected by id containing selected attributes

@@ -45,6 +45,7 @@ import cz.metacentrum.perun.core.api.exceptions.MemberNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.MemberResourceMismatchException;
 import cz.metacentrum.perun.core.api.exceptions.NotGroupMemberException;
 import cz.metacentrum.perun.core.api.exceptions.ParentGroupNotExistsException;
+import cz.metacentrum.perun.core.api.exceptions.PrivilegeException;
 import cz.metacentrum.perun.core.api.exceptions.RelationExistsException;
 import cz.metacentrum.perun.core.api.exceptions.RelationNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.UserNotExistsException;
@@ -523,7 +524,7 @@ public interface GroupsManagerBl {
 	 *
 	 * Do not return expired members of the group.
 	 *
-	 * @param sess perun session
+	 * @param perunSession perun session
 	 * @param group to get members from
 	 * @return list of active (valid) members
 	 * @throws InternalErrorException
@@ -548,7 +549,7 @@ public interface GroupsManagerBl {
 	 *
 	 * Do not return active members of the group.
 	 *
-	 * @param sess perun session
+	 * @param perunSession perun session
 	 * @param group to get members from
 	 * @return list of inactive (expired) members
 	 * @throws InternalErrorException
@@ -1579,6 +1580,24 @@ public interface GroupsManagerBl {
 	List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames);
 
 	/**
+	 * Return all RichGroups for specified member, containing selected attributes filtered by role and its type.
+	 * "members" group is not included.
+	 *
+	 * Supported are attributes from these namespaces:
+	 *  - group
+	 *  - member-group
+	 *
+	 * @param sess internal session
+	 * @param member the member to get the rich groups for
+	 * @param attrNames list of selected attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
+	 * @return list of rich groups with selected attributes
+	 * @throws InternalErrorException
+	 */
+	List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames, List<String> roles, List<String> types);
+
+	/**
 	 * Returns all RichGroups containing selected attributes
 	 *
 	 * @param sess
@@ -1588,6 +1607,19 @@ public interface GroupsManagerBl {
 	 * @throws InternalErrorException
 	 */
 	List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames);
+
+	/**
+	 * Returns all RichGroups containing selected attributes filtered by role and its type
+	 *
+	 * @param sess perun session
+	 * @param vo vo
+	 * @param attrNames if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
+	 * @return List of RichGroups
+	 * @throws InternalErrorException
+	 */
+	List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames, List<String> roles, List<String> types);
 
 	/**
 	 * Returns RichSubGroups from parentGroup containing selected attributes (only 1 level subgroups)
@@ -1610,6 +1642,19 @@ public interface GroupsManagerBl {
 	 * @throws InternalErrorException
 	 */
 	List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames);
+
+	/**
+	 * Returns all RichSubGroups from parentGroup containing selected attributes filtered by role and its type (all levels subgroups)
+	 *
+	 * @param sess
+	 * @param parentGroup
+	 * @param attrNames if attrNames is null method will return RichGroups containing all attributes
+	 * @param roles list of selected roles (if empty, then return groups by all roles)
+	 * @param types list of selected types of roles (if empty, then return by roles of all types)
+	 * @return List of RichGroups
+	 * @throws InternalErrorException
+	 */
+	List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames, List<String> roles, List<String> types);
 
 	/**
 	 * Returns RichGroup selected by id containing selected attributes
@@ -1992,7 +2037,7 @@ public interface GroupsManagerBl {
 	 *  Get list of groups where the given group is given the admin role.
 	 *
 	 * @param perunSession
-	 * @param Group with the admin role.
+	 * @param group with the admin role.
 	 * @return List of administered groups.
 	 * @throws InternalErrorException
 	 */
@@ -2002,7 +2047,7 @@ public interface GroupsManagerBl {
 	 *  Get list of VOs where the given group is given the admin role.
 	 *
 	 * @param perunSession
-	 * @param Group with the admin role.
+	 * @param group with the admin role.
 	 * @return List of administered VOs.
 	 * @throws InternalErrorException
 	 */
@@ -2012,7 +2057,7 @@ public interface GroupsManagerBl {
 	 *  Get list of facilities where the given group is given the admin role.
 	 *
 	 * @param perunSession
-	 * @param Group with the admin role.
+	 * @param group with the admin role.
 	 * @return List of administered facilities.
 	 * @throws InternalErrorException
 	 */
