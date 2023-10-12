@@ -1523,17 +1523,17 @@ public class AuthzResolverIntegrationTest extends AbstractPerunIntegrationTest {
 		sess.getPerunPrincipal().setUser(testUser);
 
 		List<Group> directRoles = perun.getGroupsManager().getAllGroups(sess, testVo);
-		directRoles.removeIf(group -> !AuthzResolverBlImpl.groupMatchesUserRolesFilter(sess, testUser, group, List.of(Role.GROUPADMIN), List.of(RoleAssigmentType.DIRECT)));
+		directRoles.removeIf(group -> !AuthzResolverBlImpl.groupMatchesUserRolesFilter(sess, testUser, group, List.of(Role.GROUPADMIN), List.of(RoleAssignmentType.DIRECT)));
 		assertEquals(1, directRoles.size());
 		assertTrue(directRoles.contains(testGroup2));
 
 		List<Group> indirectRoles = perun.getGroupsManager().getAllGroups(sess, testVo);
-		indirectRoles.removeIf(group -> !AuthzResolverBlImpl.groupMatchesUserRolesFilter(sess, testUser, group, List.of(Role.GROUPOBSERVER), List.of(RoleAssigmentType.INDIRECT)));
+		indirectRoles.removeIf(group -> !AuthzResolverBlImpl.groupMatchesUserRolesFilter(sess, testUser, group, List.of(Role.GROUPOBSERVER), List.of(RoleAssignmentType.INDIRECT)));
 		assertEquals(1, indirectRoles.size());
 		assertTrue(indirectRoles.contains(testGroup4));
 
 		List<Group> allIndirectGroups = perun.getGroupsManager().getAllGroups(sess, testVo);
-		allIndirectGroups.removeIf(group -> !AuthzResolverBlImpl.groupMatchesUserRolesFilter(sess, testUser, group, new ArrayList<>(), List.of(RoleAssigmentType.INDIRECT)));
+		allIndirectGroups.removeIf(group -> !AuthzResolverBlImpl.groupMatchesUserRolesFilter(sess, testUser, group, new ArrayList<>(), List.of(RoleAssignmentType.INDIRECT)));
 		assertEquals(1, allIndirectGroups.size());
 		assertTrue(allIndirectGroups.contains(testGroup4));
 

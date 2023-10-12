@@ -2265,7 +2265,7 @@ perun_policies:
     include_policies:
       - default_policy
 
-  getAllRichGroupsWithAttributesByNames_Vo_List<String>_List<String>_List<String>_policy:
+  getAllRichGroupsWithAttributesByNames_Vo_List<String>_List<String>_List<RoleAssignmentType>_policy:
     policy_roles:
       - RESOURCEADMIN: Vo
       - RESOURCEOBSERVER: Vo
@@ -2302,7 +2302,7 @@ perun_policies:
     include_policies:
       - default_policy
 
-  getMemberRichGroupsWithAttributesByNames_Member_List<String>_List<String>_List<String>_policy:
+  getMemberRichGroupsWithAttributesByNames_Member_List<String>_List<String>_List<RoleAssignmentType>_policy:
     policy_roles:
       - GROUPADMIN: Vo
       - GROUPOBSERVER: Vo
@@ -2313,7 +2313,7 @@ perun_policies:
     include_policies:
       - default_policy
 
-  filter-getMemberRichGroupsWithAttributesByNames_Member_List<String>_List<String>_List<String>_policy:
+  filter-getMemberRichGroupsWithAttributesByNames_Member_List<String>_List<String>_List<RoleAssignmentType>_policy:
     policy_roles:
       - GROUPADMIN: Group
       - GROUPOBSERVER: Group
@@ -2353,7 +2353,7 @@ perun_policies:
     include_policies:
       - default_policy
 
-  filter-getAllRichGroupsWithAttributesByNames_Vo_List<String>_List<String>_List<String>_policy:
+  filter-getAllRichGroupsWithAttributesByNames_Vo_List<String>_List<String>_List<RoleAssignmentType>_policy:
     policy_roles:
       - RESOURCEADMIN: Vo
       - RESOURCEOBSERVER: Vo
@@ -2423,7 +2423,7 @@ perun_policies:
     include_policies:
       - default_policy
 
-  getAllRichSubGroupsWithAttributesByNames_Group_List<String>_List<String>_List<String>_policy:
+  getAllRichSubGroupsWithAttributesByNames_Group_List<String>_List<String>_List<RoleAssignmentType>_policy:
     policy_roles:
       - RESOURCEADMIN: Vo
       - RESOURCEOBSERVER: Vo
@@ -2437,7 +2437,7 @@ perun_policies:
     include_policies:
       - default_policy
 
-  filter-getAllRichSubGroupsWithAttributesByNames_Group_List<String>_List<String>_List<String>_policy:
+  filter-getAllRichSubGroupsWithAttributesByNames_Group_List<String>_List<String>_List<RoleAssignmentType>_policy:
     policy_roles:
       - RESOURCEADMIN: Vo
       - RESOURCEOBSERVER: Vo

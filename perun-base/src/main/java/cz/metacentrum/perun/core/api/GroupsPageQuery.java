@@ -17,7 +17,7 @@ public class GroupsPageQuery {
 	private String searchString = "";
 	private Integer memberId;
 	private List<String> roles = new ArrayList<>();
-	private List<String> types = new ArrayList<>();
+	private List<RoleAssignmentType> types = new ArrayList<>();
 
 	public GroupsPageQuery() {}
 
@@ -41,25 +41,25 @@ public class GroupsPageQuery {
 		this.memberId = memberId;
 	}
 
-	public GroupsPageQuery(int pageSize, int offset, SortingOrder order, GroupsOrderColumn sortColumn, String searchString, Integer memberId, List<String> roles, List<String> types) {
+	public GroupsPageQuery(int pageSize, int offset, SortingOrder order, GroupsOrderColumn sortColumn, String searchString, Integer memberId, List<String> roles, List<RoleAssignmentType> types) {
 		this(pageSize, offset, order, sortColumn, searchString, memberId);
 		this.roles = roles;
 		this.types = types;
 	}
 
-	public GroupsPageQuery(int pageSize, int offset, SortingOrder order, GroupsOrderColumn sortColumn, String searchString, List<String> roles, List<String> types) {
+	public GroupsPageQuery(int pageSize, int offset, SortingOrder order, GroupsOrderColumn sortColumn, String searchString, List<String> roles, List<RoleAssignmentType> types) {
 		this(pageSize, offset, order, sortColumn, searchString);
 		this.roles = roles;
 		this.types = types;
 	}
 
-	public GroupsPageQuery(int pageSize, int offset, SortingOrder order, GroupsOrderColumn sortColumn, List<String> roles, List<String> types) {
+	public GroupsPageQuery(int pageSize, int offset, SortingOrder order, GroupsOrderColumn sortColumn, List<String> roles, List<RoleAssignmentType> types) {
 		this(pageSize, offset, order, sortColumn);
 		this.roles = roles;
 		this.types = types;
 	}
 
-	public GroupsPageQuery(int pageSize, int offset, SortingOrder order, GroupsOrderColumn sortColumn, Integer memberId, List<String> roles, List<String> types) {
+	public GroupsPageQuery(int pageSize, int offset, SortingOrder order, GroupsOrderColumn sortColumn, Integer memberId, List<String> roles, List<RoleAssignmentType> types) {
 		this(pageSize, offset, order, sortColumn);
 		this.memberId = memberId;
 		this.roles = roles;
@@ -120,11 +120,11 @@ public class GroupsPageQuery {
 		this.roles = roles;
 	}
 
-	public List<String> getTypes() {
+	public List<RoleAssignmentType> getTypes() {
 		return types;
 	}
 
-	public void setTypes(List<String> types) {
+	public void setTypes(List<RoleAssignmentType> types) {
 		this.types = types;
 	}
 

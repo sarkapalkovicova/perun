@@ -17,7 +17,7 @@ import cz.metacentrum.perun.core.api.RichGroup;
 import cz.metacentrum.perun.core.api.RichMember;
 import cz.metacentrum.perun.core.api.RichUser;
 import cz.metacentrum.perun.core.api.Role;
-import cz.metacentrum.perun.core.api.RoleAssigmentType;
+import cz.metacentrum.perun.core.api.RoleAssignmentType;
 import cz.metacentrum.perun.core.api.Status;
 import cz.metacentrum.perun.core.api.User;
 import cz.metacentrum.perun.core.api.Vo;
@@ -67,7 +67,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static java.util.stream.Collectors.toList;
 
@@ -81,7 +80,6 @@ public class GroupsManagerEntry implements GroupsManager {
 
 	private GroupsManagerBl groupsManagerBl;
 	private PerunBl perunBl;
-	private final static List<String> allowedTypesOfRoles = List.of(RoleAssigmentType.DIRECT, RoleAssigmentType.INDIRECT);
 
 	public GroupsManagerEntry(PerunBl perunBl) {
 		this.perunBl = perunBl;
@@ -943,16 +941,11 @@ public class GroupsManagerEntry implements GroupsManager {
 			perunBl.getMembersManagerBl().checkMemberExists(sess, member);
 		}
 
-		for (String role : query.getRoles()) {
-			if (!AuthzResolver.roleExists(role)) {
-				throw new InternalErrorException("Role: "+ role +" does not exists.");
-			}
-		}
-		for (String type : query.getTypes()) {
-			if (!allowedTypesOfRoles.contains(type)) {
-				throw new InternalErrorException("Type of type: " + type + " does not exists.");
-			}
-		}
+//		for (String role : query.getRoles()) {
+//			if (!AuthzResolver.roleExists(role)) {
+//				throw new InternalErrorException("Role: "+ role +" does not exists.");
+//			}
+//		}
 
 		// Authorization
 		if (member != null) {
@@ -1387,6 +1380,7 @@ public class GroupsManagerEntry implements GroupsManager {
 		return getGroupsManagerBl().filterOnlyAllowedAttributes(sess, richGroups, member, resource, true);
 	}
 
+	@Deprecated
 	public List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames) throws MemberNotExistsException, PrivilegeException {
 		Utils.checkPerunSession(sess);
 		this.getPerunBl().getMembersManagerBl().checkMemberExists(sess, member);
@@ -1404,33 +1398,29 @@ public class GroupsManagerEntry implements GroupsManager {
 	}
 
 	@Override
-	public List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames, List<String> roles, List<String> types) throws MemberNotExistsException, PrivilegeException {
+	public List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames, List<String> roles, List<RoleAssignmentType> types) throws MemberNotExistsException, PrivilegeException {
 		Utils.checkPerunSession(sess);
 		this.getPerunBl().getMembersManagerBl().checkMemberExists(sess, member);
 
-		for (String role : roles) {
-			if (!AuthzResolver.roleExists(role)) {
-				throw new InternalErrorException("Role: "+ role +" does not exists.");
-			}
-		}
-		for (String type : types) {
-			if (!allowedTypesOfRoles.contains(type)) {
-				throw new InternalErrorException("Type of type: " + type + " does not exists.");
-			}
-		}
+//		for (String role : roles) {
+//			if (!AuthzResolver.roleExists(role)) {
+//				throw new InternalErrorException("Role: "+ role +" does not exists.");
+//			}
+//		}
 
 		// Authorization
-		if (!AuthzResolver.authorizedInternal(sess, "getMemberRichGroupsWithAttributesByNames_Member_List<String>_List<String>_List<String>_policy", member)) {
+		if (!AuthzResolver.authorizedInternal(sess, "getMemberRichGroupsWithAttributesByNames_Member_List<String>_List<String>_List<RoleAssignmentType>_policy", member)) {
 			throw new PrivilegeException(sess, "getMemberRichGroupsWithAttributesByNames");
 		}
 
 		List<RichGroup> richGroups = getGroupsManagerBl().getMemberRichGroupsWithAttributesByNames(sess, member, attrNames, roles, types);
-		richGroups.removeIf(richGroup -> !AuthzResolver.authorizedInternal(sess, "filter-getMemberRichGroupsWithAttributesByNames_Member_List<String>_List<String>_List<String>_policy", Arrays.asList(member, richGroup)));
+		richGroups.removeIf(richGroup -> !AuthzResolver.authorizedInternal(sess, "filter-getMemberRichGroupsWithAttributesByNames_Member_List<String>_List<String>_List<RoleAssignmentType>_policy", Arrays.asList(member, richGroup)));
 
 		return getGroupsManagerBl().filterOnlyAllowedAttributes(sess, richGroups, member, null, true);
 	}
 
 	@Override
+	@Deprecated
 	public List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames) throws VoNotExistsException, PrivilegeException {
 		Utils.checkPerunSession(sess);
 		this.getPerunBl().getVosManagerBl().checkVoExists(sess, vo);
@@ -1448,28 +1438,23 @@ public class GroupsManagerEntry implements GroupsManager {
 	}
 
 	@Override
-	public List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames, List<String> roles, List<String> types) throws VoNotExistsException, PrivilegeException {
+	public List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames, List<String> roles, List<RoleAssignmentType> types) throws VoNotExistsException, PrivilegeException {
 		Utils.checkPerunSession(sess);
 		this.getPerunBl().getVosManagerBl().checkVoExists(sess, vo);
 
-		for (String role : roles) {
-			if (!AuthzResolver.roleExists(role)) {
-				throw new InternalErrorException("Role: "+ role +" does not exists.");
-			}
-		}
-		for (String type : types) {
-			if (!allowedTypesOfRoles.contains(type)) {
-				throw new InternalErrorException("Type of type: " + type + " does not exists.");
-			}
-		}
+//		for (String role : roles) {
+//			if (!AuthzResolver.roleExists(role)) {
+//				throw new InternalErrorException("Role: "+ role +" does not exists.");
+//			}
+//		}
 
 		// Authorization
-		if (!AuthzResolver.authorizedInternal(sess, "getAllRichGroupsWithAttributesByNames_Vo_List<String>_List<String>_List<String>_policy", vo)) {
+		if (!AuthzResolver.authorizedInternal(sess, "getAllRichGroupsWithAttributesByNames_Vo_List<String>_List<String>_List<RoleAssignmentType>_policy", vo)) {
 			throw new PrivilegeException(sess, "getAllRichGroupsWithAttributesByNames");
 		}
 
 		List<RichGroup> richGroups = getGroupsManagerBl().getAllRichGroupsWithAttributesByNames(sess, vo, attrNames, roles, types);
-		richGroups.removeIf(richGroup -> !AuthzResolver.authorizedInternal(sess, "filter-getAllRichGroupsWithAttributesByNames_Vo_List<String>_List<String>_List<String>_policy", richGroup));
+		richGroups.removeIf(richGroup -> !AuthzResolver.authorizedInternal(sess, "filter-getAllRichGroupsWithAttributesByNames_Vo_List<String>_List<String>_List<RoleAssignmentType>_policy", richGroup));
 
 		return getGroupsManagerBl().filterOnlyAllowedAttributes(sess, richGroups, null, true);
 	}
@@ -1491,6 +1476,7 @@ public class GroupsManagerEntry implements GroupsManager {
 	}
 
 	@Override
+	@Deprecated
 	public List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames) throws GroupNotExistsException, PrivilegeException {
 		Utils.checkPerunSession(sess);
 		this.getGroupsManagerBl().checkGroupExists(sess, parentGroup);
@@ -1507,28 +1493,23 @@ public class GroupsManagerEntry implements GroupsManager {
 	}
 
 	@Override
-	public List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames, List<String> roles, List<String> types) throws GroupNotExistsException, PrivilegeException {
+	public List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames, List<String> roles, List<RoleAssignmentType> types) throws GroupNotExistsException, PrivilegeException {
 		Utils.checkPerunSession(sess);
 		this.getGroupsManagerBl().checkGroupExists(sess, parentGroup);
 
-		for (String role : roles) {
-			if (!AuthzResolver.roleExists(role)) {
-				throw new InternalErrorException("Role: "+ role +" does not exists.");
-			}
-		}
-		for (String type : types) {
-			if (!allowedTypesOfRoles.contains(type)) {
-				throw new InternalErrorException("Type of type: " + type + " does not exists.");
-			}
-		}
+//		for (String role : roles) {
+//			if (!AuthzResolver.roleExists(role)) {
+//				throw new InternalErrorException("Role: "+ role +" does not exists.");
+//			}
+//		}
 
 		// Authorization
-		if (!AuthzResolver.authorizedInternal(sess, "getAllRichSubGroupsWithAttributesByNames_Group_List<String>_List<String>_List<String>_policy", parentGroup)) {
+		if (!AuthzResolver.authorizedInternal(sess, "getAllRichSubGroupsWithAttributesByNames_Group_List<String>_List<String>_List<RoleAssignmentType>_policy", parentGroup)) {
 			throw new PrivilegeException(sess, "getAllRichSubGroupsWithAttributesByNames");
 		}
 
 		List<RichGroup> richGroups = getGroupsManagerBl().getAllRichSubGroupsWithAttributesByNames(sess, parentGroup, attrNames, roles,  types);
-		richGroups.removeIf(richGroup -> !AuthzResolver.authorizedInternal(sess, "filter-getAllRichSubGroupsWithAttributesByNames_Group_List<String>_List<String>_List<String>_policy", richGroup));
+		richGroups.removeIf(richGroup -> !AuthzResolver.authorizedInternal(sess, "filter-getAllRichSubGroupsWithAttributesByNames_Group_List<String>_List<String>_List<RoleAssignmentType>_policy", richGroup));
 
 		return getGroupsManagerBl().filterOnlyAllowedAttributes(sess, richGroups, null, true);
 	}

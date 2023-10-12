@@ -25,7 +25,7 @@ import cz.metacentrum.perun.core.api.Resource;
 import cz.metacentrum.perun.core.api.RichGroup;
 import cz.metacentrum.perun.core.api.RichMember;
 import cz.metacentrum.perun.core.api.Role;
-import cz.metacentrum.perun.core.api.RoleAssigmentType;
+import cz.metacentrum.perun.core.api.RoleAssignmentType;
 import cz.metacentrum.perun.core.api.SortingOrder;
 import cz.metacentrum.perun.core.api.Status;
 import cz.metacentrum.perun.core.api.User;
@@ -6609,15 +6609,15 @@ public class GroupsManagerEntryIntegrationTest extends AbstractPerunIntegrationT
 
 		sess.getPerunPrincipal().setUser(user);
 
-		List<RichGroup> directRoles = groupsManager.getAllRichSubGroupsWithAttributesByNames(sess, group2, new ArrayList<>(), List.of(Role.GROUPADMIN), List.of(RoleAssigmentType.DIRECT));
+		List<RichGroup> directRoles = groupsManager.getAllRichSubGroupsWithAttributesByNames(sess, group2, new ArrayList<>(), List.of(Role.GROUPADMIN), List.of(RoleAssignmentType.DIRECT));
 		assertEquals(1, directRoles.size());
 		assertEquals(group3.getId(), directRoles.get(0).getId());
 
-		List<RichGroup> indirectRoles = groupsManager.getAllRichSubGroupsWithAttributesByNames(sess, group2, new ArrayList<>(), List.of(Role.GROUPOBSERVER), List.of(RoleAssigmentType.INDIRECT));
+		List<RichGroup> indirectRoles = groupsManager.getAllRichSubGroupsWithAttributesByNames(sess, group2, new ArrayList<>(), List.of(Role.GROUPOBSERVER), List.of(RoleAssignmentType.INDIRECT));
 		assertEquals(1, indirectRoles.size());
 		assertEquals(group4.getId(), indirectRoles.get(0).getId());
 
-		List<RichGroup> allIndirectGroups = groupsManager.getAllRichSubGroupsWithAttributesByNames(sess, group2, new ArrayList<>(), new ArrayList<>(), List.of(RoleAssigmentType.INDIRECT));
+		List<RichGroup> allIndirectGroups = groupsManager.getAllRichSubGroupsWithAttributesByNames(sess, group2, new ArrayList<>(), new ArrayList<>(), List.of(RoleAssignmentType.INDIRECT));
 		assertEquals(1, allIndirectGroups.size());
 		assertEquals(group4.getId(), allIndirectGroups.get(0).getId());
 
@@ -6645,15 +6645,15 @@ public class GroupsManagerEntryIntegrationTest extends AbstractPerunIntegrationT
 
 		sess.getPerunPrincipal().setUser(user);
 
-		List<RichGroup> directRoles = groupsManager.getAllRichGroupsWithAttributesByNames(sess, vo, new ArrayList<>(), List.of(Role.GROUPADMIN), List.of(RoleAssigmentType.DIRECT));
+		List<RichGroup> directRoles = groupsManager.getAllRichGroupsWithAttributesByNames(sess, vo, new ArrayList<>(), List.of(Role.GROUPADMIN), List.of(RoleAssignmentType.DIRECT));
 		assertEquals(1, directRoles.size());
 		assertEquals(group2.getId(), directRoles.get(0).getId());
 
-		List<RichGroup> indirectRoles = groupsManager.getAllRichGroupsWithAttributesByNames(sess, vo, new ArrayList<>(), List.of(Role.GROUPOBSERVER), List.of(RoleAssigmentType.INDIRECT));
+		List<RichGroup> indirectRoles = groupsManager.getAllRichGroupsWithAttributesByNames(sess, vo, new ArrayList<>(), List.of(Role.GROUPOBSERVER), List.of(RoleAssignmentType.INDIRECT));
 		assertEquals(1, indirectRoles.size());
 		assertEquals(group3.getId(), indirectRoles.get(0).getId());
 
-		List<RichGroup> allIndirectGroups = groupsManager.getAllRichGroupsWithAttributesByNames(sess, vo, new ArrayList<>(), new ArrayList<>(), List.of(RoleAssigmentType.INDIRECT));
+		List<RichGroup> allIndirectGroups = groupsManager.getAllRichGroupsWithAttributesByNames(sess, vo, new ArrayList<>(), new ArrayList<>(), List.of(RoleAssignmentType.INDIRECT));
 		assertEquals(1, allIndirectGroups.size());
 		assertEquals(group3.getId(), allIndirectGroups.get(0).getId());
 
@@ -6685,15 +6685,15 @@ public class GroupsManagerEntryIntegrationTest extends AbstractPerunIntegrationT
 
 		sess.getPerunPrincipal().setUser(user);
 
-		List<RichGroup> directRoles = groupsManager.getMemberRichGroupsWithAttributesByNames(sess, testMember, new ArrayList<>(), List.of(Role.GROUPADMIN), List.of(RoleAssigmentType.DIRECT));
+		List<RichGroup> directRoles = groupsManager.getMemberRichGroupsWithAttributesByNames(sess, testMember, new ArrayList<>(), List.of(Role.GROUPADMIN), List.of(RoleAssignmentType.DIRECT));
 		assertEquals(1, directRoles.size());
 		assertEquals(group2.getId(), directRoles.get(0).getId());
 
-		List<RichGroup> indirectRoles = groupsManager.getMemberRichGroupsWithAttributesByNames(sess, testMember, new ArrayList<>(), List.of(Role.GROUPOBSERVER), List.of(RoleAssigmentType.INDIRECT));
+		List<RichGroup> indirectRoles = groupsManager.getMemberRichGroupsWithAttributesByNames(sess, testMember, new ArrayList<>(), List.of(Role.GROUPOBSERVER), List.of(RoleAssignmentType.INDIRECT));
 		assertEquals(1, indirectRoles.size());
 		assertEquals(group3.getId(), indirectRoles.get(0).getId());
 
-		List<RichGroup> allIndirectGroups = groupsManager.getMemberRichGroupsWithAttributesByNames(sess, testMember, new ArrayList<>(), new ArrayList<>(), List.of(RoleAssigmentType.INDIRECT));
+		List<RichGroup> allIndirectGroups = groupsManager.getMemberRichGroupsWithAttributesByNames(sess, testMember, new ArrayList<>(), new ArrayList<>(), List.of(RoleAssignmentType.INDIRECT));
 		assertEquals(1, allIndirectGroups.size());
 		assertEquals(group3.getId(), allIndirectGroups.get(0).getId());
 
@@ -6703,7 +6703,7 @@ public class GroupsManagerEntryIntegrationTest extends AbstractPerunIntegrationT
 	}
 
 	@Test
-	public void getGroupsPageByRoles () throws Exception {
+	public void getGroupsPageByRoles() throws Exception {
 		System.out.println(CLASS_NAME + "getGroupsPageByRoles");
 
 		vo = setUpVo();
@@ -6720,19 +6720,19 @@ public class GroupsManagerEntryIntegrationTest extends AbstractPerunIntegrationT
 
 		sess.getPerunPrincipal().setUser(user);
 
-		GroupsPageQuery query1 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, List.of(Role.GROUPADMIN), List.of(RoleAssigmentType.DIRECT));
+		GroupsPageQuery query1 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, List.of(Role.GROUPADMIN), List.of(RoleAssignmentType.DIRECT));
 		Paginated<RichGroup> directRoles = groupsManager.getGroupsPage(sess, vo, query1, List.of());
 		assertNotNull(directRoles);
 		assertEquals(1, directRoles.getData().size());
 		assertEquals(group2.getId(), directRoles.getData().get(0).getId());
 
-		GroupsPageQuery query2 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, List.of(Role.GROUPOBSERVER), List.of(RoleAssigmentType.INDIRECT));
+		GroupsPageQuery query2 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, List.of(Role.GROUPOBSERVER), List.of(RoleAssignmentType.INDIRECT));
 		Paginated<RichGroup> indirectRoles = groupsManager.getGroupsPage(sess, vo, query2, List.of());
 		assertNotNull(indirectRoles);
 		assertEquals(1, indirectRoles.getData().size());
 		assertEquals(group3.getId(), indirectRoles.getData().get(0).getId());
 
-		GroupsPageQuery query3 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, new ArrayList<>(), List.of(RoleAssigmentType.INDIRECT));
+		GroupsPageQuery query3 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, new ArrayList<>(), List.of(RoleAssignmentType.INDIRECT));
 		Paginated<RichGroup> allIndirectGroups = groupsManager.getGroupsPage(sess, vo, query3, List.of());
 		assertNotNull(allIndirectGroups);
 		assertEquals(1, allIndirectGroups.getData().size());
@@ -6746,7 +6746,7 @@ public class GroupsManagerEntryIntegrationTest extends AbstractPerunIntegrationT
 	}
 
 	@Test
-	public void getGroupsPageByRolesWithMemberId () throws Exception {
+	public void getGroupsPageByRolesWithMemberId() throws Exception {
 		System.out.println(CLASS_NAME + "getGroupsPageByRoles");
 
 		vo = setUpVo();
@@ -6771,19 +6771,19 @@ public class GroupsManagerEntryIntegrationTest extends AbstractPerunIntegrationT
 
 		sess.getPerunPrincipal().setUser(user);
 
-		GroupsPageQuery query1 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, testMember.getId(), List.of(Role.GROUPADMIN), List.of(RoleAssigmentType.DIRECT));
+		GroupsPageQuery query1 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, testMember.getId(), List.of(Role.GROUPADMIN), List.of(RoleAssignmentType.DIRECT));
 		Paginated<RichGroup> directRoles = groupsManager.getGroupsPage(sess, vo, query1, List.of());
 		assertNotNull(directRoles);
 		assertEquals(1, directRoles.getData().size());
 		assertEquals(group2.getId(), directRoles.getData().get(0).getId());
 
-		GroupsPageQuery query2 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, testMember.getId(), List.of(Role.GROUPOBSERVER), List.of(RoleAssigmentType.INDIRECT));
+		GroupsPageQuery query2 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, testMember.getId(), List.of(Role.GROUPOBSERVER), List.of(RoleAssignmentType.INDIRECT));
 		Paginated<RichGroup> indirectRoles = groupsManager.getGroupsPage(sess, vo, query2, List.of());
 		assertNotNull(indirectRoles);
 		assertEquals(1, indirectRoles.getData().size());
 		assertEquals(group3.getId(), indirectRoles.getData().get(0).getId());
 
-		GroupsPageQuery query3 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, testMember.getId(), new ArrayList<>(), List.of(RoleAssigmentType.INDIRECT));
+		GroupsPageQuery query3 = new GroupsPageQuery(10, 0, SortingOrder.ASCENDING, GroupsOrderColumn.ID, testMember.getId(), new ArrayList<>(), List.of(RoleAssignmentType.INDIRECT));
 		Paginated<RichGroup> allIndirectGroups = groupsManager.getGroupsPage(sess, vo, query3, List.of());
 		assertNotNull(allIndirectGroups);
 		assertEquals(1, allIndirectGroups.getData().size());

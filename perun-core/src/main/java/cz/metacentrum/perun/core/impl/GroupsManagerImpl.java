@@ -18,7 +18,7 @@ import cz.metacentrum.perun.core.api.Pair;
 import cz.metacentrum.perun.core.api.Paginated;
 import cz.metacentrum.perun.core.api.PerunSession;
 import cz.metacentrum.perun.core.api.Resource;
-import cz.metacentrum.perun.core.api.RoleAssigmentType;
+import cz.metacentrum.perun.core.api.RoleAssignmentType;
 import cz.metacentrum.perun.core.api.SecurityTeam;
 import cz.metacentrum.perun.core.api.Status;
 import cz.metacentrum.perun.core.api.User;
@@ -681,8 +681,8 @@ public class GroupsManagerImpl implements GroupsManagerImplApi {
 	public Paginated<Group> getGroupsPage(PerunSession sess, Vo vo, GroupsPageQuery query) {
 		MapSqlParameterSource namedParams = new MapSqlParameterSource();
 
-		boolean includeIndirectRoles = query.getTypes().contains(RoleAssigmentType.INDIRECT) || query.getTypes().isEmpty();
-		boolean includeDirectRoles = query.getTypes().contains(RoleAssigmentType.DIRECT) || query.getTypes().isEmpty();
+		boolean includeIndirectRoles = query.getTypes().contains(RoleAssignmentType.INDIRECT) || query.getTypes().isEmpty();
+		boolean includeDirectRoles = query.getTypes().contains(RoleAssignmentType.DIRECT) || query.getTypes().isEmpty();
 
 		List<Integer> authorizedGroupsIds = getGroupsIds(sess, vo);
 		authorizedGroupsIds.removeIf(groupId ->

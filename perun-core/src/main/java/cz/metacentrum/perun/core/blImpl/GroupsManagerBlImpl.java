@@ -50,6 +50,7 @@ import cz.metacentrum.perun.core.api.RichMember;
 import cz.metacentrum.perun.core.api.RichUser;
 import cz.metacentrum.perun.core.api.RichUserExtSource;
 import cz.metacentrum.perun.core.api.Role;
+import cz.metacentrum.perun.core.api.RoleAssignmentType;
 import cz.metacentrum.perun.core.api.SecurityTeam;
 import cz.metacentrum.perun.core.api.Status;
 import cz.metacentrum.perun.core.api.User;
@@ -3042,12 +3043,13 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	}
 
 	@Override
+	@Deprecated
 	public List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames) {
 		return convertGroupsToRichGroupsWithAttributes(sess, this.getAllGroups(sess, vo), attrNames);
 	}
 
 	@Override
-	public List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames, List<String> roles, List<String> types) {
+	public List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames, List<String> roles, List<RoleAssignmentType> types) {
 		List<Group> groups = this.getAllGroups(sess, vo);
 		if ((!roles.isEmpty() || !types.isEmpty()) && sess.getPerunPrincipal().getUser() != null) {
 			groups.removeIf(group -> !AuthzResolverBlImpl.groupMatchesUserRolesFilter(sess, sess.getPerunPrincipal().getUser(), group, roles, types));
@@ -3056,13 +3058,14 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	}
 
 	@Override
+	@Deprecated
 	public List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames) {
 		List<Group> memberGroups = this.getMemberGroups(sess, member);
 		return convertGroupsToMemberRichGroups(sess, member, memberGroups, attrNames);
 	}
 
 	@Override
-	public List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames, List<String> roles, List<String> types) {
+	public List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames, List<String> roles, List<RoleAssignmentType> types) {
 		List<Group> memberGroups = this.getMemberGroups(sess, member);
 		if ((!roles.isEmpty() || !types.isEmpty()) && sess.getPerunPrincipal().getUser() != null) {
 			memberGroups.removeIf(group -> !AuthzResolverBlImpl.groupMatchesUserRolesFilter(sess, sess.getPerunPrincipal().getUser(), group, roles, types));
@@ -3116,12 +3119,13 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	}
 
 	@Override
+	@Deprecated
 	public List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames) {
 		return convertGroupsToRichGroupsWithAttributes(sess, this.getAllSubGroups(sess, parentGroup), attrNames);
 	}
 
 	@Override
-	public List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames, List<String> roles, List<String> types) {
+	public List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames, List<String> roles, List<RoleAssignmentType> types) {
 		List<Group> subGroups = this.getAllSubGroups(sess, parentGroup);
 		if ((!roles.isEmpty() || !types.isEmpty()) && sess.getPerunPrincipal().getUser() != null) {
 			subGroups.removeIf(group -> !AuthzResolverBlImpl.groupMatchesUserRolesFilter(sess, sess.getPerunPrincipal().getUser(), group, roles, types));

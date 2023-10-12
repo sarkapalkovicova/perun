@@ -12,7 +12,7 @@ import cz.metacentrum.perun.core.api.PerunPolicy;
 import cz.metacentrum.perun.core.api.PerunSession;
 import cz.metacentrum.perun.core.api.Resource;
 import cz.metacentrum.perun.core.api.Role;
-import cz.metacentrum.perun.core.api.RoleAssigmentType;
+import cz.metacentrum.perun.core.api.RoleAssignmentType;
 import cz.metacentrum.perun.core.api.RoleManagementRules;
 import cz.metacentrum.perun.core.api.SecurityTeam;
 import cz.metacentrum.perun.core.api.Service;
@@ -1134,12 +1134,12 @@ public class AuthzResolverImpl implements AuthzResolverImplApi {
 	}
 
 	@Override
-	public boolean groupMatchesUserRolesFilter(PerunSession sess, User user, Group group, List<String> roles, List<String> types) {
+	public boolean groupMatchesUserRolesFilter(PerunSession sess, User user, Group group, List<String> roles, List<RoleAssignmentType> types) {
 		MapSqlParameterSource parameters = prepareParametersToGetObjectsByUserRoles(user, roles);
 		parameters.addValue("groupId", group.getId());
 
-		boolean includeIndirectRoles = types.contains(RoleAssigmentType.INDIRECT) || types.isEmpty();
-		boolean includeDirectRoles = types.contains(RoleAssigmentType.DIRECT) || types.isEmpty();
+		boolean includeIndirectRoles = types.contains(RoleAssignmentType.INDIRECT) || types.isEmpty();
+		boolean includeDirectRoles = types.contains(RoleAssignmentType.DIRECT) || types.isEmpty();
 
 		try {
 			List<Group> directRelations = namedParameterJdbcTemplate.query("select " + groupMappingSelectQuery + " from authz join groups on authz.group_id=groups.id " +

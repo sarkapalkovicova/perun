@@ -17,6 +17,7 @@ import cz.metacentrum.perun.core.api.Resource;
 import cz.metacentrum.perun.core.api.RichGroup;
 import cz.metacentrum.perun.core.api.RichMember;
 import cz.metacentrum.perun.core.api.RichUser;
+import cz.metacentrum.perun.core.api.RoleAssignmentType;
 import cz.metacentrum.perun.core.api.Status;
 import cz.metacentrum.perun.core.api.User;
 import cz.metacentrum.perun.core.api.Vo;
@@ -45,7 +46,6 @@ import cz.metacentrum.perun.core.api.exceptions.MemberNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.MemberResourceMismatchException;
 import cz.metacentrum.perun.core.api.exceptions.NotGroupMemberException;
 import cz.metacentrum.perun.core.api.exceptions.ParentGroupNotExistsException;
-import cz.metacentrum.perun.core.api.exceptions.PrivilegeException;
 import cz.metacentrum.perun.core.api.exceptions.RelationExistsException;
 import cz.metacentrum.perun.core.api.exceptions.RelationNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.UserNotExistsException;
@@ -1577,6 +1577,7 @@ public interface GroupsManagerBl {
 	 * @return list of rich groups with selected attributes
 	 * @throws InternalErrorException
 	 */
+	@Deprecated
 	List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames);
 
 	/**
@@ -1595,7 +1596,7 @@ public interface GroupsManagerBl {
 	 * @return list of rich groups with selected attributes
 	 * @throws InternalErrorException
 	 */
-	List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames, List<String> roles, List<String> types);
+	List<RichGroup> getMemberRichGroupsWithAttributesByNames(PerunSession sess, Member member, List<String> attrNames, List<String> roles, List<RoleAssignmentType> types);
 
 	/**
 	 * Returns all RichGroups containing selected attributes
@@ -1606,6 +1607,7 @@ public interface GroupsManagerBl {
 	 * @return List of RichGroups
 	 * @throws InternalErrorException
 	 */
+	@Deprecated
 	List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames);
 
 	/**
@@ -1619,7 +1621,7 @@ public interface GroupsManagerBl {
 	 * @return List of RichGroups
 	 * @throws InternalErrorException
 	 */
-	List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames, List<String> roles, List<String> types);
+	List<RichGroup> getAllRichGroupsWithAttributesByNames(PerunSession sess, Vo vo, List<String> attrNames, List<String> roles, List<RoleAssignmentType> types);
 
 	/**
 	 * Returns RichSubGroups from parentGroup containing selected attributes (only 1 level subgroups)
@@ -1641,6 +1643,7 @@ public interface GroupsManagerBl {
 	 * @return List of RichGroups
 	 * @throws InternalErrorException
 	 */
+	@Deprecated
 	List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames);
 
 	/**
@@ -1654,7 +1657,7 @@ public interface GroupsManagerBl {
 	 * @return List of RichGroups
 	 * @throws InternalErrorException
 	 */
-	List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames, List<String> roles, List<String> types);
+	List<RichGroup> getAllRichSubGroupsWithAttributesByNames(PerunSession sess, Group parentGroup, List<String> attrNames, List<String> roles, List<RoleAssignmentType> types);
 
 	/**
 	 * Returns RichGroup selected by id containing selected attributes

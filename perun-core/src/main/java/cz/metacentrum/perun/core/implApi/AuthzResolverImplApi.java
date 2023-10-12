@@ -5,6 +5,7 @@ import cz.metacentrum.perun.core.api.Group;
 import cz.metacentrum.perun.core.api.Member;
 import cz.metacentrum.perun.core.api.PerunSession;
 import cz.metacentrum.perun.core.api.Resource;
+import cz.metacentrum.perun.core.api.RoleAssignmentType;
 import cz.metacentrum.perun.core.api.SecurityTeam;
 import cz.metacentrum.perun.core.api.Service;
 import cz.metacentrum.perun.core.api.User;
@@ -641,7 +642,7 @@ public interface AuthzResolverImplApi {
 	 * @param types list of selected types of roles (if empty, then return by roles of all types)
 	 * @return list of groups
 	 */
-	boolean groupMatchesUserRolesFilter(PerunSession sess, User user, Group group, List<String> roles, List<String> types);
+	boolean groupMatchesUserRolesFilter(PerunSession sess, User user, Group group, List<String> roles, List<RoleAssignmentType> types);
 
 	/**
 	 * Get all Members where the given user has set one of the given roles
