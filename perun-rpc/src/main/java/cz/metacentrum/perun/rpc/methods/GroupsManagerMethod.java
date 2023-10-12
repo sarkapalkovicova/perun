@@ -1951,7 +1951,7 @@ public enum GroupsManagerMethod implements ManagerMethod {
 					ac.getSession(), ac.getVoById(parms.readInt("vo")),
 					parms.contains("attrNames") ? parms.readList("attrNames", String.class) : null,
 					parms.contains("roles") ? parms.readList("roles", String.class) : new ArrayList<>(),
-					parms.contains("types") ? parms.readList("types", RoleAssignmentType.class) : new ArrayList<>());
+					parms.contains("types") ? parms.readList("types", String.class).stream().map(RoleAssignmentType::valueOf).toList() : new ArrayList<>());
 
 			if(listOfRichGroups == null) listOfRichGroups = new ArrayList<>();
 
@@ -2605,7 +2605,7 @@ public enum GroupsManagerMethod implements ManagerMethod {
 					ac.getMemberById(parms.readInt("member")),
 					parms.readList("attrNames", String.class),
 					parms.contains("roles") ? parms.readList("roles", String.class) : new ArrayList<>(),
-					parms.contains("types") ? parms.readList("types", RoleAssignmentType.class) : new ArrayList<>());
+				parms.contains("types") ? parms.readList("types", String.class).stream().map(RoleAssignmentType::valueOf).toList() : new ArrayList<>());
 
 			if(listOfRichGroups == null) listOfRichGroups = new ArrayList<>();
 
@@ -2690,7 +2690,7 @@ public enum GroupsManagerMethod implements ManagerMethod {
 				ac.getGroupById(parms.readInt("group")),
 				parms.readList("attrNames", String.class),
 				parms.contains("roles") ? parms.readList("roles", String.class) : new ArrayList<>(),
-				parms.contains("types") ? parms.readList("types", RoleAssignmentType.class) : new ArrayList<>());
+				parms.contains("types") ? parms.readList("types", String.class).stream().map(RoleAssignmentType::valueOf).toList() : new ArrayList<>());
 		}
 	},
 

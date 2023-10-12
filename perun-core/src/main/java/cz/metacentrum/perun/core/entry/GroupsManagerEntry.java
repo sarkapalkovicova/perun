@@ -941,11 +941,11 @@ public class GroupsManagerEntry implements GroupsManager {
 			perunBl.getMembersManagerBl().checkMemberExists(sess, member);
 		}
 
-//		for (String role : query.getRoles()) {
-//			if (!AuthzResolver.roleExists(role)) {
-//				throw new InternalErrorException("Role: "+ role +" does not exists.");
-//			}
-//		}
+		for (String role : query.getRoles()) {
+			if (!AuthzResolver.roleExists(role)) {
+				throw new InternalErrorException("Role: "+ role +" does not exists.");
+			}
+		}
 
 		// Authorization
 		if (member != null) {
@@ -1402,11 +1402,11 @@ public class GroupsManagerEntry implements GroupsManager {
 		Utils.checkPerunSession(sess);
 		this.getPerunBl().getMembersManagerBl().checkMemberExists(sess, member);
 
-//		for (String role : roles) {
-//			if (!AuthzResolver.roleExists(role)) {
-//				throw new InternalErrorException("Role: "+ role +" does not exists.");
-//			}
-//		}
+		for (String role : roles) {
+			if (!AuthzResolver.roleExists(role)) {
+				throw new InternalErrorException("Role: "+ role +" does not exists.");
+			}
+		}
 
 		// Authorization
 		if (!AuthzResolver.authorizedInternal(sess, "getMemberRichGroupsWithAttributesByNames_Member_List<String>_List<String>_List<RoleAssignmentType>_policy", member)) {
@@ -1442,11 +1442,11 @@ public class GroupsManagerEntry implements GroupsManager {
 		Utils.checkPerunSession(sess);
 		this.getPerunBl().getVosManagerBl().checkVoExists(sess, vo);
 
-//		for (String role : roles) {
-//			if (!AuthzResolver.roleExists(role)) {
-//				throw new InternalErrorException("Role: "+ role +" does not exists.");
-//			}
-//		}
+		for (String role : roles) {
+			if (!AuthzResolver.roleExists(role)) {
+				throw new InternalErrorException("Role: "+ role +" does not exists.");
+			}
+		}
 
 		// Authorization
 		if (!AuthzResolver.authorizedInternal(sess, "getAllRichGroupsWithAttributesByNames_Vo_List<String>_List<String>_List<RoleAssignmentType>_policy", vo)) {
@@ -1497,11 +1497,11 @@ public class GroupsManagerEntry implements GroupsManager {
 		Utils.checkPerunSession(sess);
 		this.getGroupsManagerBl().checkGroupExists(sess, parentGroup);
 
-//		for (String role : roles) {
-//			if (!AuthzResolver.roleExists(role)) {
-//				throw new InternalErrorException("Role: "+ role +" does not exists.");
-//			}
-//		}
+		for (String role : roles) {
+			if (!AuthzResolver.roleExists(role)) {
+				throw new InternalErrorException("Role: "+ role +" does not exists.");
+			}
+		}
 
 		// Authorization
 		if (!AuthzResolver.authorizedInternal(sess, "getAllRichSubGroupsWithAttributesByNames_Group_List<String>_List<String>_List<RoleAssignmentType>_policy", parentGroup)) {
