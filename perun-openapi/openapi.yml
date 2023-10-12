@@ -876,7 +876,7 @@ components:
         sortColumn: { $ref: '#/components/schemas/GroupsOrderColumn' }
         memberId: { type: integer }
         searchString: { type: string }
-        roles: { type: array, items: { type: string } }
+        roles: { type: array, items: { $ref: '#/components/schemas/GroupAdminRoles' } }
         types: { type: array, items: { $ref: '#/components/schemas/RoleAssignmentType' } }
       required:
         - pageSize
